@@ -30,6 +30,8 @@ namespace TowerGlide.Gameplay
         [SerializeField] private FlightBoundary boundary;
         [SerializeField] private Transform spawnPoint;
         [SerializeField] private FlightHud hud;
+        [Tooltip("충돌·링·근접 회피 파티클(선택).")]
+        [SerializeField] private FeedbackFx feedbackFx;
 
         [Header("Rules")]
         [Tooltip("에디터에서 이 씬을 바로 Play할 때 사용할 모드(메뉴에서 들어오면 메뉴 선택이 우선).")]
@@ -189,6 +191,7 @@ namespace TowerGlide.Gameplay
 
             int points = _score.OnRingPassed(_runTime);
             GameApp.Instance?.Haptics.Play(HapticStrength.Light);
+            if (feedbackFx != null) feedbackFx.PlayRingPass(gate.transform.position, gate.transform.rotation);
             hud?.ShowToast($"RING +{points}" + (_score.CurrentCombo > 0 ? $"  x{_score.CurrentCombo + 1}" : string.Empty));
             if (result == CheckpointPassResult.Completed) FinishRun(completed: true);
         }
@@ -199,6 +202,13 @@ namespace TowerGlide.Gameplay
             if (!_nearMiss.TryAward(obstacle.Id, _runTime)) return;
             int points = _score.OnNearMiss(proximity, aircraft.SpeedKmh);
             hud?.ShowToast($"NEAR MISS +{points}");
+            hud?.FlashNearMiss(proximity);
+            GameApp.Instance?.Haptics.Play(HapticStrength.Light);
+            if (feedbackFx != null)
+            {
+                Transform t = aircraft.transform;
+                feedbackFx.PlayNearMiss(t.position, t.rotation);
+            }
         }
 
         private void OnCrashed(Vector3 point, Collider other, float impactSpeed)
@@ -212,6 +222,7 @@ namespace TowerGlide.Gameplay
             }
             _score.OnCollision();
             chaseCamera.AddShake(Mathf.Clamp01(impactSpeed / 40f));
+            if (feedbackFx != null) feedbackFx.PlayCrash(point, (aircraft.transform.position - point).normalized);
             GameApp.Instance?.Haptics.Play(HapticStrength.Heavy);
             hud?.ShowToast("CRASH");
             StartCoroutine(RespawnRoutine(penalty: true));
@@ -289,7 +300,7 @@ namespace TowerGlide.Gameplay
         {
             if (boundary == null) return;
             BoundaryStatus status = boundary.Evaluate(pos);
-            hud?.SetBoundaryWarning(status == BoundaryStatus.Warning);
+            hud?.SetBoundaryWarning(status == BoundaryStatus.Warning, boundary.DirectionToCenter(pos));
             if (status == BoundaryStatus.Outside && !_respawning)
             {
                 hud?.ShowToast("RETURNING TO AREA");

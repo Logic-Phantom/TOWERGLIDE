@@ -25,5 +25,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="NUnit" Version="3.14.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+    <!-- 실패한 테스트를 GitHub 주석으로 출력(로그 없이도 API로 원인 확인 가능) -->
+    <PackageReference Include="GitHubActionsTestLogger" Version="2.4.1" />
   </ItemGroup>
 </Project>

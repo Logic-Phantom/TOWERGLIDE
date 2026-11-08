@@ -26,6 +26,8 @@ namespace TowerGlide.Gameplay
         [SerializeField] private Color inactiveColor = new Color(0.55f, 0.6f, 0.7f, 1f);
         [SerializeField] private Color nextColor = new Color(1f, 0.62f, 0.1f, 1f);
         [SerializeField] private Color passedColor = new Color(0.25f, 0.85f, 0.45f, 1f);
+        [Tooltip("다음 링일 때만 켜지는 월드 마커(멀리서도 보이는 빛기둥). 명세 1.3 '다음 목표 방향을 월드 마커로 안내'.")]
+        [SerializeField] private GameObject beacon;
         [Tooltip("복귀 시 링 앞(-forward) 몇 m에서 다시 시작할지.")]
         [SerializeField] private float respawnBackOffset = 25f;
 
@@ -47,6 +49,7 @@ namespace TowerGlide.Gameplay
 
         public void SetVisualState(GateVisualState state)
         {
+            if (beacon != null && beacon.activeSelf != (state == GateVisualState.Next)) beacon.SetActive(state == GateVisualState.Next);
             _mpb ??= new MaterialPropertyBlock();
             Color c = state == GateVisualState.Next ? nextColor : state == GateVisualState.Passed ? passedColor : inactiveColor;
             foreach (Renderer r in frameRenderers)
