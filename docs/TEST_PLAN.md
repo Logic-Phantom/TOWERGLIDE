@@ -18,6 +18,11 @@
 | 코스 규칙(간격·고도·선회각·상승각) | `CourseValidatorTests` |
 | 건물 아키타입(10종 이상, 모든 높이 커버) | `BuildingCatalogTests` |
 | 도시 배치(결정성, 코스 비우기, 협곡 벽, 예약·지지 건물, 형태 다양성) | `CityLayoutGeneratorTests` |
+| 좌표계(EPSG:5186 원점, 왕복 오차, 거리 정확도, 축, rebase) | `CoordinateSystemTests` |
+| 월드 정의(격자가 코스 포함, 계획 좌표 미검증 표시) | `WorldDefinitionTests` |
+| 청크 격자·상태 기계(중복 요청 거부, 실패 재시도) | `ChunkGridTests`, `ChunkStateTrackerTests` |
+| 스트리밍 판단(현재 청크 우선, 진행 방향·부스트 프리로드, 동시 로드 제한, 히스테리시스, 예산 퇴출, 실패 대기, 준비 판정) | `ChunkStreamingPlannerTests` |
+| 기체 해금·모드 호환·선택 복구, 성능 막대, 저장 v1→v2, 누적 기록, 항력 보상 추력 | `AircraftRulesTests`, `AircraftStatsTests`, `AircraftSaveTests`, `ThrustCompensationTests` |
 
 실행: Unity Test Runner(Window ▸ General ▸ Test Runner ▸ EditMode) 또는 Unity 없이 `dotnet test tools/core-tests`(GitHub Actions `core-tests`).
 
@@ -34,6 +39,9 @@
 | 충돌 집계 → 복귀 | `CrashIsCountedThenAircraftRespawns` |
 | 일시정지/재개 | `PauseStopsTimeAndResumeRestores` |
 | 결과 → 재시작(같은 모드) | `FinishShowsResultsAndRestartReloads` |
+| 기체별 튜닝·질량 분리, 최고 속도 순서, 롤·선회 차이, 여객기 부스트 없음 | `AircraftComparisonPlayModeTests` |
+| 선택 기체 스폰·튜닝·카메라·저장, 여객기 SKYLINE 차단 | `OpenWorldFlowPlayModeTests` |
+| 청크 앞쪽 로드·뒤쪽 언로드·중복 로드 없음 | `ChunksStreamInAheadAndUnloadBehindWithoutDuplicates` |
 
 씬 테스트는 `TOWERGLIDE ▸ 2. 씬 생성`으로 CityFlight가 Build Settings에 들어간 뒤에만 실행되고, 그 전에는 Ignore된다.
 
@@ -60,3 +68,5 @@
 | 2026-11-08 | PlayMode 6 · Unity Test Runner | — | **미실행**: Unity 미설치 |
 | 2026-11-08 | EditMode(Core) 65 | GitHub Actions | 1차 실패 → 원인: 코스 08→09 대각선이 스카이브리지 지지 건물을 깎음(실제 설계 결함) → 코스 수정 후 통과. 최종 결과는 README |
 | 2026-11-08 | PlayMode 11 · 코스 검증 메뉴 | — | **미실행**: Unity 미설치 |
+| 2026-11-08 | EditMode(Core) 94 | GitHub Actions | ✅ 전체 통과 ([run](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42466537780)) |
+| 2026-11-08 | PlayMode 18 · 코스 검증 · 스트리밍 스트레스 | — | **미실행**: Unity 미설치 |

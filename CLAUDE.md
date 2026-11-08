@@ -16,6 +16,13 @@ Unity 6.3 LTS + URP + C# 모바일 3D 비행 게임. Android(Google Play) + iOS(
 - 씬은 `TOWERGLIDE ▸ 2. 씬 생성`으로 만든다. 씬/프리팹 YAML을 손으로 쓰지 않는다.
 - 파일명 = public 클래스명. Inspector 참조 누락은 `Debug.LogError`로 즉시 알린다.
 
+## 오픈월드·기체 규칙 (애드온 `docs/SUPERPROMPT_ADDON_SEOUL_AIRCRAFT.md`)
+- 판단 로직(좌표 변환·스트리밍 계획·해금·호환성)은 Core에, 실행(씬 로드·스폰·UI)은 Runtime에.
+- 실제 서울 데이터는 `docs/SEOUL_WORLD_DATA_SOURCES.md`에서 `ALLOWED`가 된 것만 임포트. 공개 배포 기준(비상업·변경금지 자료 금지). 지도 서비스 캡처·추출 금지.
+- 계획용 좌표·절차적 높이를 실제 데이터처럼 표시하지 않는다.
+- 새 기체 = 튜닝 에셋 + 프리팹 + `AircraftDefinition` + 카탈로그 등록. 컨트롤러 복사·기종 `if` 분기 금지. 저장 ID(`AircraftIds`)는 바꾸지 않는다.
+- 청크 경계에서 플레이어를 막거나 되돌리지 않는다.
+
 ## 금지
 - 유료 에셋·플러그인·API·서버, 광고·분석·로그인 SDK(소유자 승인 없이). 라이선스를 확인하지 못한 에셋.
 - 다른 게임·사이트의 모델·코드·사운드·브랜드 복제, 실제 항공사·제조사 표식.
