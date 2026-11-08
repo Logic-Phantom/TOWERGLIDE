@@ -1,6 +1,6 @@
 # 외부 에셋·라이선스 기록
 
-**현재 외부 에셋 0개.** 창문 패턴(`Art/Textures/T_Window_*.png`)·가장자리 플래시(`T_EdgeGlow.png`)도 에디터 스크립트가 직접 그려 만든다. 파티클 텍스처는 Unity 내장 `Default-Particle`. 효과음·엔진음·바람 소리는 Core `ProceduralAudio`가 실행 시 합성한다(음원 파일 없음). 앱 내 고지 문구는 `Runtime/UI/LicenseNotices.cs`(설정 ▸ 라이선스). 모든 형상은 Unity 기본 도형을 에디터 스크립트로 조합해 생성하고, 머티리얼은 URP Lit으로 직접 만든다. 폰트는 Unity 내장 LegacyRuntime(엔진 일부).
+**현재 외부 에셋 1개(글꼴 Pretendard).** 창문 패턴(`Art/Textures/T_Window_*.png`)·가장자리 플래시(`T_EdgeGlow.png`)도 에디터 스크립트가 직접 그려 만든다. 파티클 텍스처는 Unity 내장 `Default-Particle`. 효과음·엔진음·바람 소리는 Core `ProceduralAudio`가 실행 시 합성한다(음원 파일 없음). 앱 내 고지 문구는 `Runtime/UI/LicenseNotices.cs`(설정 ▸ 라이선스). 모든 형상은 Unity 기본 도형을 에디터 스크립트로 조합해 생성하고, 머티리얼은 URP Lit으로 직접 만든다. UI 폰트는 Pretendard(아래 기록), 파일이 없을 때만 Unity 내장 LegacyRuntime으로 대체.
 
 사용 우선순위(명세 7.2): ① 직접 제작 ② CC0/퍼블릭 도메인 ③ 개별 라이선스를 확인한 Unity Asset Store 무료 에셋.
 금지: 라이선스 불명, CC BY-NC 등 상업 제한, 다른 게임 추출물, 실제 항공사·제조사 로고/도장, 유료 에셋 우회 사용. Kenney 등도 **에셋 페이지별로** CC0 확인(유료 번들을 무료로 가정하지 않음).
@@ -16,7 +16,7 @@
 ## 에셋 기록 양식
 | 에셋 | 파일 경로 | 제작자 | 공식 출처 URL | 가격 | 라이선스(링크) | 상업 사용 | 수정 | 저작자 표시 | 재배포 제한 | 확인일 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| (없음) | | | | | | | | | | |
+| Pretendard Regular·Bold v1.3.9 | `Assets/_Project/Art/Fonts/Pretendard-Regular.otf`, `Pretendard-Bold.otf` (원문 라이선스 `Pretendard-OFL.txt`, 앱 표시용 `Resources/Licenses/Pretendard-OFL.txt`) | Kil Hyung-jin (orioncactus) | https://github.com/orioncactus/pretendard (태그 v1.3.9, `packages/pretendard/dist/public/static/`) | 무료 | SIL Open Font License 1.1 — https://scripts.sil.org/OFL | 허용(앱에 포함·배포 가능, 폰트 단독 판매 금지) | 허용(수정본은 예약 글꼴명 "Pretendard" 사용 불가 — 우리는 수정하지 않음) | 저작권 고지 + 라이선스 동봉 필요 → 설정 ▸ 라이선스에 전문 표시 | 폰트 파일 단독 판매 금지 | 2026-11-08 (SHA-256 Regular `3ffbacde…1c93`, Bold `2e91915f…1cc7`) |
 
 ## 앱 내 고지
 설정 ▸ 라이선스에서 표시(구현됨, `LicenseNotices`). 외부 에셋·폰트·지도 데이터를 추가하면 이 문서와 `LicenseNotices`를 함께 고친다.

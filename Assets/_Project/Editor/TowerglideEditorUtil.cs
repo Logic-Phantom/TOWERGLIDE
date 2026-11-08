@@ -14,6 +14,9 @@ namespace TowerGlide.EditorTools
         public const string MaterialsDir = Root + "/Art/Materials";
         public const string TuningPath = SettingsDir + "/AircraftFlightTuning.asset";
         public const string VersionFile = "build/version.json";
+        /// <summary>UI 폰트: Pretendard v1.3.9(SIL OFL 1.1) — docs/THIRD_PARTY_ASSETS.md.</summary>
+        public const string FontRegularPath = Root + "/Art/Fonts/Pretendard-Regular.otf";
+        public const string FontBoldPath = Root + "/Art/Fonts/Pretendard-Bold.otf";
 
         public const string CompanyName = "Logic Phantom";
         public const string ProductName = "TOWERGLIDE";

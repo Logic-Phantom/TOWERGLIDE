@@ -29,6 +29,7 @@ namespace TowerGlide.EditorTools
             ApplyInputHandling();
             EnsureRenderPipelines();
             EnsureTuningAsset();
+            EnsureFontImport();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log("[TOWERGLIDE] 프로젝트 설정 적용 완료. 입력 처리 방식이 바뀌었다면 Unity가 재시작을 요청합니다.");
@@ -168,6 +169,26 @@ namespace TowerGlide.EditorTools
             SerializedProperty current = so.FindProperty("m_CurrentQuality");
             if (current != null) current.intValue = 1;
             so.ApplyModifiedPropertiesWithoutUndo();
+        }
+
+        /// <summary>
+        /// Pretendard 동적 폰트 설정: 필요한 글자만 런타임에 그려서(동적) 메모리를 아끼고, 폰트 데이터는 빌드에 포함.
+        /// 폰트에 없는 글자(이모지 등)는 OS 한글 폰트로 대체한다.
+        /// </summary>
+        public static void EnsureFontImport()
+        {
+            foreach (string path in new[] { TowerglideEditorUtil.FontRegularPath, TowerglideEditorUtil.FontBoldPath })
+            {
+                if (!(AssetImporter.GetAtPath(path) is TrueTypeFontImporter importer))
+                {
+                    Debug.LogWarning($"[TOWERGLIDE] 폰트 없음: {path} — 기본 폰트로 진행합니다.");
+                    continue;
+                }
+                importer.fontTextureCase = FontTextureCase.Dynamic;
+                importer.includeFontData = true;
+                importer.fontNames = new[] { "Pretendard", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Noto Sans KR", "Malgun Gothic", "Roboto" };
+                importer.SaveAndReimport();
+            }
         }
 
         public static AircraftFlightTuning EnsureTuningAsset()

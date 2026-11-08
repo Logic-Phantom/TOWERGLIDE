@@ -4,6 +4,27 @@
 
 ---
 
+## 2026-11-08 — 한글 폰트(Pretendard) 도입
+
+요청: "폰트 도입"(D-048 후속).
+
+### 한 일
+- 다운로드: `orioncactus/pretendard` 태그 v1.3.9 `packages/pretendard/dist/public/static/Pretendard-{Regular,Bold}.otf` + `LICENSE`(raw.githubusercontent.com). jsDelivr 경로는 404·패키지 크기 제한으로 실패 → GitHub API 트리에서 경로 확인 후 받음.
+- 검증: 파일 크기가 GitHub 트리 값과 일치(1,574,352 / 1,576,660 B), OTF(`OTTO`) 헤더·테이블 정상, SHA-256 기록. cmap 분석 결과 한글 11,172자 전부, UI에 쓰는 기호(▲ ★ ° · — … © → ↔) 지원. 미지원: 🔒(격납고 문구 → "잠김"으로 교체), ▸(에디터 로그 전용이라 영향 없음).
+- 배치: `Art/Fonts/`(폰트 2 + OFL 원문), `Resources/Licenses/Pretendard-OFL.txt`(앱 표시용).
+- 적용: 프로젝트 설정 메뉴가 동적 폰트·폰트 데이터 포함·대체 폰트 이름 설정, 씬 생성기의 모든 라벨·토글이 Pretendard(굵게 = Bold 파일), 라이선스 화면을 스크롤 + OFL 전문.
+
+### 테스트 결과
+| 범위 | 결과 |
+|---|---|
+| 폰트 파일 형식·문자 지원 | ✅ 스크립트로 확인(위) |
+| Unity 임포트·화면 표시 | **미실행** — Unity 미설치. `TOWERGLIDE ▸ 2. 씬 생성`을 다시 실행해야 기존 씬에 반영됨 |
+
+### 알려진 위험
+- CFF 기반 OTF — Unity 동적 폰트(FreeType)는 지원하지만, 문제가 있으면 같은 저장소의 TTF(`static/alternative/`, 약 2.7MB씩)로 교체.
+
+---
+
 ## 2026-11-08 — Phase 3 UI·오디오·진행
 
 ### 한 일

@@ -47,9 +47,9 @@
 4. **Phase 1 조작감 튜닝**: `CityFlight` Play → 키보드와 Device Simulator로 비행 → `docs/FLIGHT_PHYSICS.md` 표대로 `AircraftFlightTuning` 조정 → 승인 기준 7개 체크.
 5. **Android 실기기**: `TOWERGLIDE ▸ Build ▸ Android APK` → `adb install -r` → 터치 조작·프레임 확인.
 6. **애드온 확인**: 격납고에서 3종 선택 → FREE FLIGHT 비행 차이, 여객기로 SKYLINE RUN이 막히는지, 청크가 로드/언로드되며 도시가 끊기지 않는지(HUD 왼쪽 아래 스트리밍 디버그), 제트 부스트로 도시를 가로질러도 앞 청크가 제때 나오는지 → `docs/SEOUL_WORLD_PERFORMANCE.md`.
-7. **Phase 3 확인**: 메인 메뉴·일시정지 ▸ SETTINGS(값 바꾸고 앱 재시작 후 유지되는지), 첫 비행 튜토리얼, 엔진음(기체별)·바람·링·충돌 소리 크기 균형.
+7. **Phase 3 확인**: 메인 메뉴·일시정지 ▸ SETTINGS(값 바꾸고 앱 재시작 후 유지되는지), 첫 비행 튜토리얼, 엔진음(기체별)·바람·링·충돌 소리 크기 균형, **한글이 Pretendard로 보이는지**(`TOWERGLIDE ▸ 2. 씬 생성`을 다시 실행해야 적용).
 8. **Phase 2 눈으로 확인**: 건물 형태·창문 정렬·LOD 전환, 장애물이 "보고 피할 수 있는지", 링 빛기둥·경계 화살표·근접 회피 플래시가 과하지 않은지.
-9. 그 다음: Phase 4 — 비주얼 폴리싱(기체 모델·VFX·조명)·실기기 프로파일링·품질 옵션 튜닝(`docs/ROADMAP.md`). **한글 폰트(TMP+OFL 폰트) 도입 여부 결정 [소유자]** — D-048.
+9. 그 다음: Phase 4 — 비주얼 폴리싱(기체 모델·VFX·조명)·실기기 프로파일링·품질 옵션 튜닝(`docs/ROADMAP.md`).
 10. **서울 데이터(OW2) 전 결정 [소유자]**: OSM ODbL 파생 데이터 공개 방식, 사용할 공공 데이터셋 — `docs/SEOUL_WORLD_DATA_SOURCES.md`.
 11. 출시 준비(소유자): 패키지 ID 확정(D-004), 상표 검색, Play/Apple 계정, 업로드 키, 처리방침 게시 — `docs/RELEASE_CHECKLIST.md`.
 
@@ -109,6 +109,12 @@ build/version.json · tools/core-tests/ · .github/workflows/ · docs/ · brand/
 | [WORKLOG](WORKLOG.md) · [CLAUDE.md](CLAUDE.md) | 작업 일지 / 에이전트 작업 규칙 |
 
 ## 변경 내역 (Changelog)
+### 한글 폰트 — 2026-11-08
+- **Pretendard v1.3.9 Regular·Bold**(SIL OFL 1.1) 도입: 공식 저장소에서 받아 크기·형식·해시 확인, 한글 11,172자·UI 기호 지원 확인
+- 모든 UI 텍스트에 적용(굵게 = Bold 파일), 없는 글자는 OS 한글 폰트로 대체, 🔒 이모지 → "잠김"
+- 설정 ▸ 라이선스에 저작권 고지 + OFL 전문(스크롤) 표시
+- 방식: uGUI 동적 폰트(TMP 전환은 Unity 확인 후 선택)
+
 ### Phase 3 — 2026-11-08 · UI·오디오·진행
 - **설정 화면**(메인 메뉴·일시정지 공용): 그래픽·프레임·조작 감도·카메라 흔들림·피치 반전·조이스틱 방식·볼륨 3종·진동·튜토리얼 다시 보기·초기화·라이선스 — 바뀌는 즉시 적용·저장, 비행 중 즉시 반영
 - **사운드**(외부 음원 0개, 코드 합성): 기체별 엔진 루프(프로펠러·제트·터보팬)·바람·충돌·링(콤보마다 음 상승)·근접 회피·부스트·버튼 클릭
@@ -149,3 +155,4 @@ build/version.json · tools/core-tests/ · .github/workflows/ · docs/ · brand/
 | 2026-11-08 | Phase 2: Core 도시·코스 데이터, 건물 12종·장애물 8종·VFX 프리팹, 피드백, 코스 검증, 씬 테스트 | Core 65 테스트 CI 통과 / Unity 미검증 — 상세 [WORKLOG.md](WORKLOG.md) |
 | 2026-11-08 | 애드온 OW0·OW1·AC0·AC1: 좌표계·청크 스트리밍·실루엣, 기체 3종·격납고·저장 v2, 데이터 라이선스 기록 | Core 94 테스트 CI 통과 / Unity·실기기 미검증 — 상세 [WORKLOG.md](WORKLOG.md) |
 | 2026-11-08 | Phase 3: 설정 화면·합성 사운드·튜토리얼·라이선스 고지 | Core 111 테스트 CI 통과 / Unity 미검증 — 상세 [WORKLOG.md](WORKLOG.md) |
+| 2026-11-08 | 한글 폰트 Pretendard 도입(OFL), 라이선스 전문 표시 | 파일 검증 완료 / Unity 화면 미확인 — 상세 [WORKLOG.md](WORKLOG.md) |

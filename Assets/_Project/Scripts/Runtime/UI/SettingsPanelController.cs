@@ -40,7 +40,7 @@ namespace TowerGlide.UI
         {
             if (panel != null) panel.SetActive(false);
             if (licensePanel != null) licensePanel.SetActive(false);
-            if (licenseText != null) licenseText.text = LicenseNotices.Text;
+            if (licenseText != null) licenseText.text = LicenseNotices.FullText();
 
             Hook(sensitivity, v => { S.controlSensitivity = SettingsOptions.SnapSensitivity(v); });
             Hook(cameraShake, v => { S.cameraShake = v; });

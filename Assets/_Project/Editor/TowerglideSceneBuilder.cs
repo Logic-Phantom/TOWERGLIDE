@@ -41,6 +41,7 @@ namespace TowerGlide.EditorTools
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
             TowerglideProjectSetup.EnsureFolders();
             AircraftFlightTuning tuning = TowerglideProjectSetup.EnsureTuningAsset();
+            TowerglideProjectSetup.EnsureFontImport();
             TowerglideMaterials m = TowerglideMaterials.CreateAll();
             TowerglidePrefabFactory.Set prefabs = TowerglidePrefabFactory.CreateAll(m);
             TowerglideAircraftFactory.Result aircraftSet = TowerglideAircraftFactory.CreateAll(m, tuning);
@@ -401,7 +402,10 @@ namespace TowerGlide.EditorTools
         // UI
         // =====================================================================
 
-        private static Font UiFont => Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        // UI 폰트 = Pretendard(OFL). 파일이 없으면 Unity 기본 폰트로 대체(D-049)
+        private static Font UiFont =>
+            AssetDatabase.LoadAssetAtPath<Font>(FontRegularPath) ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        private static Font UiFontBold => AssetDatabase.LoadAssetAtPath<Font>(FontBoldPath);
         private static Sprite Knob => AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
         private static Sprite RoundedSprite => AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
 
@@ -443,10 +447,12 @@ namespace TowerGlide.EditorTools
         {
             RectTransform rt = Rect(name, parent, anchor, anchor, pos, size);
             Text t = rt.gameObject.AddComponent<Text>();
-            t.font = UiFont;
+            // 굵게는 실제 Bold 폰트 파일로(합성 볼드보다 선명). Bold 파일이 없으면 합성 볼드
+            Font bold = style == FontStyle.Bold ? UiFontBold : null;
+            t.font = bold != null ? bold : UiFont;
             t.text = text;
             t.fontSize = fontSize;
-            t.fontStyle = style;
+            t.fontStyle = bold != null ? FontStyle.Normal : style;
             t.alignment = align;
             t.color = Color.white;
             t.raycastTarget = false;
@@ -851,7 +857,26 @@ namespace TowerGlide.EditorTools
 
             // 라이선스 고지 오버레이
             Image lic = Panel("LicensePanel", p, new Vector2(0.15f, 0.1f), new Vector2(0.85f, 0.9f), Vector2.zero, Vector2.zero, new Color(0.04f, 0.07f, 0.12f, 0.98f), RoundedSprite);
-            Text licText = Label("Text", lic.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(1100f, 620f), "", 26, TextAnchor.UpperLeft, FontStyle.Normal);
+            // 스크롤 가능한 고지 본문(OFL 전문 포함)
+            RectTransform viewport = Rect("Viewport", lic.transform, Vector2.zero, Vector2.one, new Vector2(0f, 40f), new Vector2(-60f, -140f));
+            viewport.gameObject.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0.01f);
+            viewport.gameObject.AddComponent<RectMask2D>();
+            RectTransform content = Rect("Content", viewport, new Vector2(0f, 1f), new Vector2(1f, 1f), Vector2.zero, new Vector2(0f, 600f));
+            content.pivot = new Vector2(0.5f, 1f);
+            Text licText = content.gameObject.AddComponent<Text>();
+            licText.font = UiFont;
+            licText.fontSize = 24;
+            licText.color = Color.white;
+            licText.alignment = TextAnchor.UpperLeft;
+            licText.horizontalOverflow = HorizontalWrapMode.Wrap;
+            licText.verticalOverflow = VerticalWrapMode.Overflow;
+            ContentSizeFitter fitter = content.gameObject.AddComponent<ContentSizeFitter>();
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            ScrollRect scroll = lic.gameObject.AddComponent<ScrollRect>();
+            scroll.viewport = viewport;
+            scroll.content = content;
+            scroll.horizontal = false;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
             MenuButton("CloseLicenses", lic.transform, new Vector2(0.5f, 0f), new Vector2(0f, 60f), new Vector2(260f, 80f), "닫기", c.ToggleLicenses);
 
             SetRef(c, "panel", panel.gameObject);

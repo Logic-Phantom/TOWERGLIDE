@@ -12,6 +12,8 @@
 - 이동 장애물은 Kinematic Rigidbody(MovePosition) — 물리 비용 예측 가능.
 - 사운드: 22.05kHz 모노 합성 클립(엔진 3종 약 2초·바람 3초·효과음 5종 1초 미만) → 합계 약 1MB 미만(PCM float), 처음 쓸 때 한 번 생성·캐시. 효과음 동시 재생 8개 상한.
 
+- 폰트: Pretendard Regular·Bold 동적 폰트(두 파일 약 3.1MB), 쓰는 글자만 런타임에 아틀라스로 그림.
+
 ## 해야 할 것 (Phase 4)
 - [x] LODGroup(LOD0 전체 / LOD1 본체 / 1.5% 미만 컬링), 창문 = 미터 UV + 64px 반복 텍스처(2026-11-08, 코드만)
 - [ ] Occlusion Culling 베이크 검토

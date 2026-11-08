@@ -88,7 +88,7 @@ namespace TowerGlide.UI
                 card.name = $"Card_{def.id}";
                 SetChildText(card.transform, "Name", def.displayName);
                 bool selectable = catalog.IsSelectable(def, Records);
-                SetChildText(card.transform, "Status", def.IsImplemented ? (selectable ? CategoryLabel(def.category) : "🔒 잠김") : "개발 예정");
+                SetChildText(card.transform, "Status", def.IsImplemented ? (selectable ? CategoryLabel(def.category) : "잠김") : "개발 예정");
                 AircraftDefinition captured = def;
                 card.onClick.AddListener(() => View(captured));
                 _cards.Add((def, card, card.GetComponent<Image>()));
