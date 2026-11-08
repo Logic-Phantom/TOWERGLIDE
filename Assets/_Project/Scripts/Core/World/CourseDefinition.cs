@@ -79,10 +79,11 @@ namespace TowerGlide.Core.World
                 new CourseWaypoint("06 Turn East", new Float3(35f, 60f, 175f)),
                 new CourseWaypoint("07 Drone Corridor", new Float3(140f, 60f, 175f)),
                 new CourseWaypoint("08 Skybridge Gate", new Float3(210f, 50f, 175f)),
-                new CourseWaypoint("09 Climb Turn", new Float3(315f, 140f, 105f)),
-                new CourseWaypoint("10 High Altitude", new Float3(245f, 240f, -105f)),
-                new CourseWaypoint("11 Descent", new Float3(105f, 190f, -245f)),
-                new CourseWaypoint("12 Final Gate", new Float3(-35f, 90f, -385f)),
+                // 08 → 09는 z=175 거리를 그대로 따라가며 상승(대각선이면 스카이브리지 지지 건물을 깎게 됨 — CI 테스트로 발견)
+                new CourseWaypoint("09 Climb Turn", new Float3(330f, 130f, 175f)),
+                new CourseWaypoint("10 High Altitude", new Float3(315f, 230f, -35f)),
+                new CourseWaypoint("11 Descent", new Float3(175f, 190f, -175f)),
+                new CourseWaypoint("12 Final Gate", new Float3(10f, 110f, -340f)),
             });
     }
 }

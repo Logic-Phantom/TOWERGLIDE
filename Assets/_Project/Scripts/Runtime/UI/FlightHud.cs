@@ -34,6 +34,11 @@ namespace TowerGlide.UI
         [SerializeField] private Text toastText;
         [SerializeField] private float toastSeconds = 1.4f;
         [SerializeField] private GameObject boundaryWarning;
+        [Tooltip("경계 경고 중 구역 중심 방향을 가리키는 화살표.")]
+        [SerializeField] private RectTransform boundaryArrow;
+        [Tooltip("근접 회피 순간 화면 가장자리 플래시(짧게).")]
+        [SerializeField] private Graphic nearMissFlash;
+        [SerializeField] private float nearMissFlashSeconds = 0.35f;
 
         [Header("Panels")]
         [SerializeField] private GameObject pausePanel;
@@ -52,9 +57,13 @@ namespace TowerGlide.UI
         private int _lastSeconds = int.MinValue;
         private int _lastPassed = int.MinValue;
         private float _toastUntil;
+        private float _flashUntil;
+        private float _flashStrength;
 
         private void Awake()
         {
+            if (nearMissFlash != null) nearMissFlash.canvasRenderer.SetAlpha(0f);
+            if (boundaryArrow != null) boundaryArrow.gameObject.SetActive(false);
             if (pausePanel != null) pausePanel.SetActive(false);
             if (resultPanel != null) resultPanel.SetActive(false);
             if (boundaryWarning != null) boundaryWarning.SetActive(false);
@@ -132,6 +141,21 @@ namespace TowerGlide.UI
             }
 
             if (toastText != null && toastText.text.Length > 0 && Time.unscaledTime > _toastUntil) toastText.text = string.Empty;
+
+            if (nearMissFlash != null && _flashStrength > 0f)
+            {
+                float remaining = Mathf.Clamp01((_flashUntil - Time.unscaledTime) / Mathf.Max(0.01f, nearMissFlashSeconds));
+                nearMissFlash.canvasRenderer.SetAlpha(remaining * _flashStrength);
+                if (remaining <= 0f) _flashStrength = 0f;
+            }
+        }
+
+        /// <summary>근접 회피 피드백: 가장자리 빛이 잠깐(근접할수록 진하게). 과한 연출 금지 — 최대 알파 0.5.</summary>
+        public void FlashNearMiss(float proximity01)
+        {
+            if (nearMissFlash == null) return;
+            _flashStrength = Mathf.Lerp(0.2f, 0.5f, Mathf.Clamp01(proximity01));
+            _flashUntil = Time.unscaledTime + nearMissFlashSeconds;
         }
 
         public void ShowToast(string message)
@@ -141,9 +165,17 @@ namespace TowerGlide.UI
             _toastUntil = Time.unscaledTime + toastSeconds;
         }
 
-        public void SetBoundaryWarning(bool show)
+        /// <param name="directionToCenter">월드 수평 방향(구역 중심 쪽)</param>
+        public void SetBoundaryWarning(bool show, Vector3 directionToCenter)
         {
             if (boundaryWarning != null && boundaryWarning.activeSelf != show) boundaryWarning.SetActive(show);
+            if (boundaryArrow == null) return;
+            if (boundaryArrow.gameObject.activeSelf != show) boundaryArrow.gameObject.SetActive(show);
+            if (!show || worldCamera == null) return;
+            // 카메라 기준 좌우 각도 → 화면 위쪽(0°)을 기준으로 회전
+            Vector3 camForward = Vector3.ProjectOnPlane(worldCamera.transform.forward, Vector3.up);
+            float angle = Vector3.SignedAngle(camForward, directionToCenter, Vector3.up);
+            boundaryArrow.localRotation = Quaternion.Euler(0f, 0f, -angle);
         }
 
         public void ShowPause(bool show)
