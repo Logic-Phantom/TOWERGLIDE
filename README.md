@@ -18,7 +18,7 @@
 | 범위 | 상태 |
 |---|---|
 | Unity로 프로젝트 열기·컴파일 | ⬜ 미실행 (Unity 미설치) |
-| EditMode 테스트(Core, 약 50케이스) | ⬜ Unity에서 미실행 · GitHub Actions `core-tests`(.NET)로 푸시마다 실행 — 아래 "변경 내역" 결과 참고 |
+| EditMode 테스트(Core, 50케이스) | ✅ GitHub Actions `core-tests`(.NET 8, C# 9)에서 컴파일·전체 통과 ([실행 기록](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42456690200)) · ⬜ Unity Test Runner에서는 미실행 |
 | PlayMode 테스트(비행 방향·안정화 6케이스) | ⬜ 미실행 |
 | 씬 생성 메뉴 | ⬜ 미실행 (코드만 작성) |
 | 에디터 Play·조작감 | ⬜ 미실행 |
@@ -105,9 +105,9 @@ build/version.json · tools/core-tests/ · .github/workflows/ · docs/ · brand/
 - FREE FLIGHT / SKYLINE RUN 세션, 12링 코스, 장애물 7종, 근접 회피, 경계, 안전 지점 복귀, 일시정지·결과·재시작
 - 로컬 저장(원자적 쓰기·버전·손상 복구), 햅틱, 품질 3단계, SafeArea HUD, 메인 메뉴
 - 에디터 자동화: 프로젝트 설정·씬 생성·빌드(AAB/APK/iOS Xcode)
-- 테스트 EditMode ~50 / PlayMode 6, CI(core-tests, unity-build)
+- 테스트 EditMode 50 / PlayMode 6, CI(core-tests, unity-build)
 - 문서 17종, 개인정보처리방침 초안, 출시 체크리스트(Android+iOS)
-- **검증**: Unity·실기기 미실행. `core-tests`는 GitHub Actions에서 실행(결과는 Actions 탭)
+- **검증**: Core 50개 테스트 GitHub Actions 통과([기록](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42456690200)). Runtime·Editor 코드는 Unity 미설치로 컴파일 미검증, 실기기 미실행
 
 ## 작업 내역 (Work Log)
 | 날짜 | 작업 | 결과 |

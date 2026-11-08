@@ -24,7 +24,7 @@
 - Core(순수 C#) 11파일: 입력 정규화, 부스트 게이지, 공력 함수, 체크포인트 순서, 점수, 근접 회피 쿨다운, 비행 기록, 상태 기계, 저장 데이터·이관.
 - Runtime 22파일: 비행 컨트롤러·튜닝 SO, 충돌 처리, 입력 라우터·가상 조이스틱·터치 버튼·키보드/게임패드, 추적 카메라, 링·코스·근접 회피 센서·장애물 표시, 경계·이동 장애물, 비행 세션, 저장 서비스, 햅틱, 앱 루트·씬 전환·품질 프리셋, HUD·SafeArea·메인 메뉴.
 - Editor 4파일: 프로젝트 설정 적용(Player·입력·URP 3단계·Quality), 씬 생성(그레이박스 도시·장애물 7종·12링 코스·기체·HUD·메뉴), 빌드(AAB/APK/iOS Xcode, 검증), 공통 도우미.
-- 테스트: EditMode 7파일(약 50케이스), PlayMode 1파일(6케이스).
+- 테스트: EditMode 6파일(50케이스), PlayMode 1파일(6케이스).
 - CI: `core-tests`(push마다 .NET 테스트), `unity-build`(수동, GameCI — 시크릿 필요).
 - 문서: README, CLAUDE/AGENTS, docs 17종 + 처리방침 HTML, 아이콘 시안(`brand/icon-concept.webp`), 원본 명세 사본(`docs/SUPERPROMPT.md`).
 
@@ -34,7 +34,7 @@
 | Unity 컴파일 | **미실행** — Unity 미설치 |
 | EditMode / PlayMode | **미실행** — Unity 미설치 |
 | .NET core-tests(로컬) | **미실행** — .NET SDK 설치 권한 거부 |
-| .NET core-tests(GitHub Actions) | 푸시 후 실행됨 — 결과는 README "검증 상태" 참고 |
+| .NET core-tests(GitHub Actions) | ✅ 성공 — Core 컴파일 + EditMode 50케이스 통과 ([run 42456690200](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42456690200)). 로그 원문은 인증이 필요해 개수는 테스트 메서드 수 기준 |
 | 씬 생성 / 빌드 | **미실행** |
 
 ### 알려진 위험

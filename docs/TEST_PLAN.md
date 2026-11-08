@@ -47,4 +47,5 @@
 ## 결과 기록
 | 날짜 | 범위 | 환경 | 결과 |
 |---|---|---|---|
-| 2026-11-08 | EditMode/PlayMode | — | **미실행**: Unity 미설치, .NET 로컬 설치 권한 거부. 푸시 후 GitHub Actions `core-tests` 결과를 README에 기록 |
+| 2026-11-08 | EditMode(Core) 50 | GitHub Actions ubuntu, .NET 8, C# 9 | ✅ 전체 통과 ([run](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42456690200)) |
+| 2026-11-08 | PlayMode 6 · Unity Test Runner | — | **미실행**: Unity 미설치 |
