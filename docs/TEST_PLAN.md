@@ -23,6 +23,10 @@
 | 청크 격자·상태 기계(중복 요청 거부, 실패 재시도) | `ChunkGridTests`, `ChunkStateTrackerTests` |
 | 스트리밍 판단(현재 청크 우선, 진행 방향·부스트 프리로드, 동시 로드 제한, 히스테리시스, 예산 퇴출, 실패 대기, 준비 판정) | `ChunkStreamingPlannerTests` |
 | 기체 해금·모드 호환·선택 복구, 성능 막대, 저장 v1→v2, 누적 기록, 항력 보상 추력 | `AircraftRulesTests`, `AircraftStatsTests`, `AircraftSaveTests`, `ThrustCompensationTests` |
+| 사운드 합성(NaN 없음·정규화·짧은 효과음·루프 이음매·기종별 차이·결정성) | `ProceduralAudioTests` |
+| 엔진음 모델(속도↑ 음높이↑, 터보팬 범위 좁음·부스트 무시, 범위) | `EngineSoundModelTests` |
+| 튜토리얼(조작 유지해야 진행, 누적, 부스트 없는 기체, 건너뛰기) | `TutorialSequenceTests` |
+| 설정 선택지(순환, 감도 0.1 단위, 초기화 시 튜토리얼 유지, 표시 문구) | `SettingsOptionsTests` |
 
 실행: Unity Test Runner(Window ▸ General ▸ Test Runner ▸ EditMode) 또는 Unity 없이 `dotnet test tools/core-tests`(GitHub Actions `core-tests`).
 
@@ -42,6 +46,9 @@
 | 기체별 튜닝·질량 분리, 최고 속도 순서, 롤·선회 차이, 여객기 부스트 없음 | `AircraftComparisonPlayModeTests` |
 | 선택 기체 스폰·튜닝·카메라·저장, 여객기 SKYLINE 차단 | `OpenWorldFlowPlayModeTests` |
 | 청크 앞쪽 로드·뒤쪽 언로드·중복 로드 없음 | `ChunksStreamInAheadAndUnloadBehindWithoutDuplicates` |
+| 저장 파일 재실행 유지·손상 백업·새 버전 보호(실제 파일 입출력) | `LocalSaveServicePlayModeTests` |
+| 합성 클립 생성·캐시, 설정 적용(볼륨·이벤트) | `AudioPlayModeTests` |
+| 첫 비행 튜토리얼 표시·건너뛰기 저장 | `TutorialPlayModeTests` |
 
 씬 테스트는 `TOWERGLIDE ▸ 2. 씬 생성`으로 CityFlight가 Build Settings에 들어간 뒤에만 실행되고, 그 전에는 Ignore된다.
 
@@ -70,3 +77,5 @@
 | 2026-11-08 | PlayMode 11 · 코스 검증 메뉴 | — | **미실행**: Unity 미설치 |
 | 2026-11-08 | EditMode(Core) 94 | GitHub Actions | ✅ 전체 통과 ([run](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42466537780)) |
 | 2026-11-08 | PlayMode 18 · 코스 검증 · 스트리밍 스트레스 | — | **미실행**: Unity 미설치 |
+| 2026-11-08 | EditMode(Core) 111 | GitHub Actions | ✅ 전체 통과 ([run](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42467226975)) |
+| 2026-11-08 | PlayMode 24 | — | **미실행**: Unity 미설치 |

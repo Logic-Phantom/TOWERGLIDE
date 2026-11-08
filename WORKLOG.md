@@ -4,6 +4,28 @@
 
 ---
 
+## 2026-11-08 — Phase 3 UI·오디오·진행
+
+### 한 일
+- Core: `Audio/ProceduralAudio`(엔진 3종·바람 루프, 효과음 5종, 교차 페이드 루프), `EngineSoundModel`, `Tutorial/TutorialSequence`, `Save/SettingsOptions`.
+- Runtime: `AudioManager`(GameApp 소유, 클립 캐시, 8 보이스), `FlightAudioController`(엔진·바람 루프), `SettingsPanelController`, `TutorialController`, `LicenseNotices`, `UiClickSound`. `GameApp.CommitSettings`/`SettingsChanged`, `FlightSession`의 효과음·설정 즉시 반영, 기체 정의에 엔진음 종류.
+- Editor: 설정 화면(DefaultControls 슬라이더·토글)을 메인 메뉴·일시정지에 생성, 튜토리얼 UI, 비행 사운드, 모든 메뉴 버튼 클릭음, 기체별 엔진음 지정.
+- 이미 있던 Phase 3 항목(메뉴·HUD·일시정지·결과·로컬 기록·햅틱)은 유지.
+
+### 테스트 결과
+| 범위 | 결과 |
+|---|---|
+| core-tests | ✅ 111케이스 통과 ([run](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42467226975)) — 신규 17: 사운드 6·엔진음 3·튜토리얼 4·설정 4 |
+| PlayMode 신규 6(저장 파일 3·사운드 2·튜토리얼 1) | **미실행** — Unity 미설치 |
+| 실제 소리·화면 배치 | **미확인** |
+
+### 알려진 위험·미포함
+- 합성 사운드는 기능 검증용 품질 — 실제 기기 스피커에서 거슬리지 않는지 들어 봐야 한다.
+- 설정 화면 배치는 1920×1080 기준 좌표 — 21:9 폰·태블릿에서 겹침 확인 필요.
+- 한글 폰트(TMP) 미도입(D-048), 음악 없음(D-044).
+
+---
+
 ## 2026-11-08 — 애드온: 서울 오픈월드 OW0·OW1 + 기체 선택 AC0·AC1
 
 요청: `TOWERGLIDE_Seoul_OpenWorld_Aircraft_Addon_Prompt.md` 추가 요건 반영(사본 `docs/SUPERPROMPT_ADDON_SEOUL_AIRCRAFT.md`). 명세 지시대로 **OW0·OW1·AC0·AC1만** 수행.

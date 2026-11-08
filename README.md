@@ -12,16 +12,17 @@
 - 서울 오픈월드 확장 준비 — 청크 스트리밍 구조(현재 도시는 절차적 테스트 데이터, 실제 서울 데이터 없음)
 - 조작: 왼손 플로팅 조이스틱(기울이면 선회) + 오른손 BOOST/BRAKE
 
-## 🧭 지금 상태 한눈에 (2026-11-08 Phase 2 + 애드온 OW0·OW1·AC1 코드 완료 — 다음 작업은 여기부터)
+## 🧭 지금 상태 한눈에 (2026-11-08 Phase 3 + 애드온 OW0·OW1·AC1 코드 완료 — 다음 작업은 여기부터)
 
-**한 줄 요약**: Phase 0~2 코드 완료 + 서울 오픈월드·기체 선택 애드온의 첫 단계 — **좌표계(EPSG:5186)·250m 청크 스트리밍·원거리 실루엣**, **기체 3종(Scout P-1 / Viper F-9 / Cityliner 180)·격납고·선택 저장**. 실제 서울 지도 데이터는 라이선스 확인 전이라 **0건**. **개발 PC에 Unity가 없어 아직 한 번도 열거나 실행하지 않았다** — 다음 단계는 Unity 설치 → 컴파일 오류 수정 → 조작감 튜닝.
+**한 줄 요약**: Phase 0~3 코드 완료(Phase 3 = 설정 화면·합성 사운드·조작 튜토리얼·라이선스 고지) + 서울 오픈월드·기체 선택 애드온의 첫 단계 — **좌표계(EPSG:5186)·250m 청크 스트리밍·원거리 실루엣**, **기체 3종(Scout P-1 / Viper F-9 / Cityliner 180)·격납고·선택 저장**. 실제 서울 지도 데이터는 라이선스 확인 전이라 **0건**. **개발 PC에 Unity가 없어 아직 한 번도 열거나 실행하지 않았다** — 다음 단계는 Unity 설치 → 컴파일 오류 수정 → 조작감 튜닝.
 
 ### 검증 상태
 | 범위 | 상태 |
 |---|---|
 | Unity로 프로젝트 열기·컴파일 | ⬜ 미실행 (Unity 미설치) |
-| EditMode 테스트(Core, 94케이스) | ✅ GitHub Actions `core-tests`(.NET 8, C# 9)에서 전체 통과 ([최근 실행](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42466537780)) · ⬜ Unity Test Runner에서는 미실행 |
-| PlayMode 테스트(비행 6 + 씬 흐름 5 + 기체 비교 4 + 오픈월드 흐름 3) | ⬜ 미실행 |
+| EditMode 테스트(Core, 111케이스) | ✅ GitHub Actions `core-tests`(.NET 8, C# 9)에서 전체 통과 ([최근 실행](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42467226975)) · ⬜ Unity Test Runner에서는 미실행 |
+| PlayMode 테스트(24케이스: 비행·씬 흐름·기체 비교·오픈월드·저장 파일·사운드·튜토리얼) | ⬜ 미실행 |
+| 설정·사운드·튜토리얼 실제 화면·소리 | ⬜ 미실행 — 가로 화면 겹침·음량 균형·터치 크기 확인 필요 |
 | 청크 스트리밍 실제 동작·메모리 | ⬜ 미실행 — `docs/SEOUL_WORLD_PERFORMANCE.md` 기록 양식만 |
 | 기체 3종 조작감 차이 | ⬜ 미실행(테스트만 작성) |
 | 씬 생성·코스 검증 메뉴 | ⬜ 미실행 (코드만 작성) |
@@ -46,10 +47,11 @@
 4. **Phase 1 조작감 튜닝**: `CityFlight` Play → 키보드와 Device Simulator로 비행 → `docs/FLIGHT_PHYSICS.md` 표대로 `AircraftFlightTuning` 조정 → 승인 기준 7개 체크.
 5. **Android 실기기**: `TOWERGLIDE ▸ Build ▸ Android APK` → `adb install -r` → 터치 조작·프레임 확인.
 6. **애드온 확인**: 격납고에서 3종 선택 → FREE FLIGHT 비행 차이, 여객기로 SKYLINE RUN이 막히는지, 청크가 로드/언로드되며 도시가 끊기지 않는지(HUD 왼쪽 아래 스트리밍 디버그), 제트 부스트로 도시를 가로질러도 앞 청크가 제때 나오는지 → `docs/SEOUL_WORLD_PERFORMANCE.md`.
-7. **Phase 2 눈으로 확인**: 건물 형태·창문 정렬·LOD 전환, 장애물이 "보고 피할 수 있는지", 링 빛기둥·경계 화살표·근접 회피 플래시가 과하지 않은지.
-8. 그 다음: Phase 3 — 설정 화면·사운드·튜토리얼·TMP 한글 폰트(`docs/ROADMAP.md`).
-9. **서울 데이터(OW2) 전 결정 [소유자]**: OSM ODbL 파생 데이터 공개 방식, 사용할 공공 데이터셋 — `docs/SEOUL_WORLD_DATA_SOURCES.md`.
-10. 출시 준비(소유자): 패키지 ID 확정(D-004), 상표 검색, Play/Apple 계정, 업로드 키, 처리방침 게시 — `docs/RELEASE_CHECKLIST.md`.
+7. **Phase 3 확인**: 메인 메뉴·일시정지 ▸ SETTINGS(값 바꾸고 앱 재시작 후 유지되는지), 첫 비행 튜토리얼, 엔진음(기체별)·바람·링·충돌 소리 크기 균형.
+8. **Phase 2 눈으로 확인**: 건물 형태·창문 정렬·LOD 전환, 장애물이 "보고 피할 수 있는지", 링 빛기둥·경계 화살표·근접 회피 플래시가 과하지 않은지.
+9. 그 다음: Phase 4 — 비주얼 폴리싱(기체 모델·VFX·조명)·실기기 프로파일링·품질 옵션 튜닝(`docs/ROADMAP.md`). **한글 폰트(TMP+OFL 폰트) 도입 여부 결정 [소유자]** — D-048.
+10. **서울 데이터(OW2) 전 결정 [소유자]**: OSM ODbL 파생 데이터 공개 방식, 사용할 공공 데이터셋 — `docs/SEOUL_WORLD_DATA_SOURCES.md`.
+11. 출시 준비(소유자): 패키지 ID 확정(D-004), 상표 검색, Play/Apple 계정, 업로드 키, 처리방침 게시 — `docs/RELEASE_CHECKLIST.md`.
 
 ## 설치·실행
 요구 사항: Unity 6.3 LTS(6000.3.x), Windows 또는 macOS. iOS 빌드는 macOS + Xcode.
@@ -107,6 +109,14 @@ build/version.json · tools/core-tests/ · .github/workflows/ · docs/ · brand/
 | [WORKLOG](WORKLOG.md) · [CLAUDE.md](CLAUDE.md) | 작업 일지 / 에이전트 작업 규칙 |
 
 ## 변경 내역 (Changelog)
+### Phase 3 — 2026-11-08 · UI·오디오·진행
+- **설정 화면**(메인 메뉴·일시정지 공용): 그래픽·프레임·조작 감도·카메라 흔들림·피치 반전·조이스틱 방식·볼륨 3종·진동·튜토리얼 다시 보기·초기화·라이선스 — 바뀌는 즉시 적용·저장, 비행 중 즉시 반영
+- **사운드**(외부 음원 0개, 코드 합성): 기체별 엔진 루프(프로펠러·제트·터보팬)·바람·충돌·링(콤보마다 음 상승)·근접 회피·부스트·버튼 클릭
+- **조작 튜토리얼**: 첫 비행 시 롤 → 선회 → 피치 → 부스트, 실제 조작을 유지해야 진행, SKIP 가능
+- **라이선스 고지** 화면
+- 테스트: EditMode 94 → 111(CI 통과), PlayMode 18 → 24(미실행)
+- 미포함: 한글 TMP 폰트(폰트 파일 반입 결정 필요, D-048), 음악(D-044)
+
 ### 애드온 OW0·OW1·AC0·AC1 — 2026-11-08 · 서울 오픈월드 준비 + 기체 선택
 - **OW0**: 기존 구조·충돌 분석, 데이터 출처·라이선스 기록(전부 `PENDING_REVIEW`/참고용, 사용 0건), 좌표계 EPSG:5186 TM(Core, 왕복 오차 <1mm 테스트), 청크·LOD·메모리 초안
 - **OW1**: 테스트 도시를 250m 청크 씬 16개로 분할, `ChunkStreamingPlanner`(속도·방향·부스트 프리로드, 히스테리시스, 예산, 실패 재시도) + Additive 비동기 로더, 원거리 실루엣, 시작 시 청크 대기, 나침반·스트리밍 디버그 HUD
@@ -138,3 +148,4 @@ build/version.json · tools/core-tests/ · .github/workflows/ · docs/ · brand/
 | 2026-11-08 | 환경 조사, 명세 검토(15개 보완), 구조·아키텍처·핵심 코드·에디터 자동화·테스트·CI·문서 작성, 첫 푸시 | 코드 작성 완료 / Unity 미검증 — 상세 [WORKLOG.md](WORKLOG.md) |
 | 2026-11-08 | Phase 2: Core 도시·코스 데이터, 건물 12종·장애물 8종·VFX 프리팹, 피드백, 코스 검증, 씬 테스트 | Core 65 테스트 CI 통과 / Unity 미검증 — 상세 [WORKLOG.md](WORKLOG.md) |
 | 2026-11-08 | 애드온 OW0·OW1·AC0·AC1: 좌표계·청크 스트리밍·실루엣, 기체 3종·격납고·저장 v2, 데이터 라이선스 기록 | Core 94 테스트 CI 통과 / Unity·실기기 미검증 — 상세 [WORKLOG.md](WORKLOG.md) |
+| 2026-11-08 | Phase 3: 설정 화면·합성 사운드·튜토리얼·라이선스 고지 | Core 111 테스트 CI 통과 / Unity 미검증 — 상세 [WORKLOG.md](WORKLOG.md) |
