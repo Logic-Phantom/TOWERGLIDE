@@ -61,6 +61,10 @@ namespace TowerGlide.Core.Save
         public float topSpeedKmh;
         public float maxAltitudeMeters;
         public int totalRuns;
+        // v2: 해금 조건용 누적 기록
+        public float totalDistanceMeters;
+        public float totalFlightSeconds;
+        public int skylineCompletions;
 
         public RecordsData Sanitized()
         {
@@ -72,6 +76,9 @@ namespace TowerGlide.Core.Save
                 topSpeedKmh = Math.Max(0f, FlightMath.Sanitize(topSpeedKmh)),
                 maxAltitudeMeters = Math.Max(0f, FlightMath.Sanitize(maxAltitudeMeters)),
                 totalRuns = Math.Max(0, totalRuns),
+                totalDistanceMeters = Math.Max(0f, FlightMath.Sanitize(totalDistanceMeters)),
+                totalFlightSeconds = Math.Max(0f, FlightMath.Sanitize(totalFlightSeconds)),
+                skylineCompletions = Math.Max(0, skylineCompletions),
             };
         }
 
@@ -83,9 +90,12 @@ namespace TowerGlide.Core.Save
             longestFlightMeters = Math.Max(longestFlightMeters, result.DistanceMeters);
             topSpeedKmh = Math.Max(topSpeedKmh, result.MaxSpeedKmh);
             maxAltitudeMeters = Math.Max(maxAltitudeMeters, result.MaxAltitudeMeters);
+            totalDistanceMeters += Math.Max(0f, FlightMath.Sanitize(result.DistanceMeters));
+            totalFlightSeconds += Math.Max(0f, FlightMath.Sanitize(result.FlightSeconds));
 
             if (result.Mode != FlightMode.SkylineRun) return false;
 
+            if (result.Completed) skylineCompletions++;
             bool newBest = false;
             int total = result.Score.Total;
             if (total > bestSkylineScore)
@@ -107,12 +117,28 @@ namespace TowerGlide.Core.Save
     public sealed class SaveData
     {
         /// <summary>저장 형식 버전. 구조를 바꾸면 올리고 SaveDataMigrator에 변환을 추가한다.</summary>
-        public const int CurrentVersion = 1;
+        /// <remarks>v1 → v2(2026-11-08): aircraft 섹션(선택 기체) + 누적 기록 3개 추가.</remarks>
+        public const int CurrentVersion = 2;
 
         public int version = CurrentVersion;
         public SettingsData settings = new SettingsData();
         public RecordsData records = new RecordsData();
+        public AircraftSaveData aircraft = new AircraftSaveData();
 
         public static SaveData CreateDefault() => new SaveData();
+    }
+
+    /// <summary>기체 선택 저장(애드온 명세 14.6). 해금은 기록으로 매번 계산하므로 저장하지 않는다(조작·불일치 방지).</summary>
+    [Serializable]
+    public sealed class AircraftSaveData
+    {
+        public string selectedAircraftId = TowerGlide.Core.Aircraft.AircraftIds.Default;
+
+        public AircraftSaveData Sanitized() => new AircraftSaveData
+        {
+            selectedAircraftId = string.IsNullOrWhiteSpace(selectedAircraftId) || selectedAircraftId.Length > 64
+                ? TowerGlide.Core.Aircraft.AircraftIds.Default
+                : selectedAircraftId.Trim(),
+        };
     }
 }

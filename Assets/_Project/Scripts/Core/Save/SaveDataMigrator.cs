@@ -37,13 +37,19 @@ namespace TowerGlide.Core.Save
             {
                 status = SaveLoadStatus.NewerVersion;
             }
-            // 향후: else if (loaded.version < SaveData.CurrentVersion) { MigrateV1ToV2(loaded); status = Migrated; }
+            else if (loaded.version < SaveData.CurrentVersion)
+            {
+                // v1 → v2: aircraft 섹션·누적 기록 추가. JsonUtility는 없는 필드를 기본값으로 두므로 값만 채운다.
+                // 누적 거리·시간은 v1에 없었다 → 0에서 시작(기존 최장 거리로 추정하지 않음: 해금 조건을 부풀리지 않기 위해).
+                status = SaveLoadStatus.Migrated;
+            }
 
             return new SaveData
             {
                 version = status == SaveLoadStatus.NewerVersion ? loaded.version : SaveData.CurrentVersion,
                 settings = (loaded.settings ?? new SettingsData()).Sanitized(),
                 records = (loaded.records ?? new RecordsData()).Sanitized(),
+                aircraft = (loaded.aircraft ?? new AircraftSaveData()).Sanitized(),
             };
         }
     }

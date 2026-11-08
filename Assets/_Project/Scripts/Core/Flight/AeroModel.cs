@@ -64,6 +64,21 @@ namespace TowerGlide.Core.Flight
             return Math.Min(maxThrustAccel, error * responsiveness);
         }
 
+        /// <summary>
+        /// 항력 보상 + 비례 제어 추력. 단순 비례 제어는 항력 때문에 목표보다 낮은 속도에 머문다(정상 상태 오차) →
+        /// 현재 항력만큼 미리 더해 목표 속도를 정확히 유지한다. 목표보다 빠르면 0(감속은 항력·에어브레이크).
+        /// 기체마다 순항 속도가 크게 달라(소형기 30 m/s, 제트 70 m/s) 정확한 유지가 필요해 도입(D-036).
+        /// </summary>
+        public static float ThrustWithDragCompensation(float forwardSpeed, float targetSpeed, float currentDragAccel,
+            float maxThrustAccel, float responsiveness)
+        {
+            if (targetSpeed <= 0f) return 0f;
+            float error = targetSpeed - forwardSpeed;
+            if (error <= 0f) return 0f;
+            float thrust = Math.Max(0f, currentDragAccel) + error * responsiveness;
+            return Math.Min(maxThrustAccel, thrust);
+        }
+
         /// <summary>스로틀 입력(-1..1)을 목표 속도로 변환. 0 = 순항.</summary>
         public static float TargetSpeed(float throttle, float minFlightSpeed, float cruiseSpeed, float maxSpeed)
         {
