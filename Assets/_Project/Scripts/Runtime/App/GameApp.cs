@@ -1,3 +1,5 @@
+using System;
+using TowerGlide.Audio;
 using TowerGlide.Core.App;
 using TowerGlide.Core.Gameplay;
 using TowerGlide.Core.Save;
@@ -22,6 +24,11 @@ namespace TowerGlide.App
         public GameStateMachine State { get; private set; }
         /// <summary>격납고 기체 선택(애드온 명세 14).</summary>
         public AircraftSelectionService Aircraft { get; private set; }
+        /// <summary>효과음·절차 합성 클립(Phase 3).</summary>
+        public AudioManager Audio { get; private set; }
+
+        /// <summary>설정 화면에서 값이 바뀌면 발생 — 비행 중이면 FlightSession이 즉시 반영.</summary>
+        public event Action SettingsChanged;
 
         /// <summary>메인 메뉴 → 비행 씬으로 넘기는 모드 선택. 비행 씬을 직접 Play하면 기본값(Free Flight).</summary>
         public FlightMode PendingMode { get; set; } = FlightMode.FreeFlight;
@@ -45,6 +52,7 @@ namespace TowerGlide.App
             Save = new LocalSaveService();
             Save.Load();
             Haptics = new HapticService();
+            Audio = gameObject.AddComponent<AudioManager>();
             Aircraft = new AircraftSelectionService(Save, Resources.Load<AircraftCatalog>(AircraftSelectionService.CatalogResourcePath));
             ApplySettings();
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
@@ -60,6 +68,16 @@ namespace TowerGlide.App
             QualityPresetApplier.Apply((QualityTier)s.qualityTier);
             Haptics.Enabled = s.hapticsEnabled;
             AudioListener.volume = s.masterVolume;
+            if (Audio != null) Audio.SfxVolume = s.sfxVolume;
+        }
+
+        /// <summary>설정 화면 전용: 적용 + 저장 + 알림.</summary>
+        public void CommitSettings()
+        {
+            Save.Data.settings = Save.Data.settings.Sanitized();
+            ApplySettings();
+            Save.Save();
+            SettingsChanged?.Invoke();
         }
 
         public void SaveNow() => Save.Save();

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using TowerGlide.Audio;
 using TowerGlide.Cameras;
 using TowerGlide.Core.World;
 using TowerGlide.Core.World.Streaming;
@@ -115,6 +116,8 @@ namespace TowerGlide.EditorTools
             KeyboardGamepadInputSource keyboard = systems.AddComponent<KeyboardGamepadInputSource>();
             SetRef(keyboard, "router", router);
             FlightSession session = systems.AddComponent<FlightSession>();
+            FlightAudioController flightAudio = systems.AddComponent<FlightAudioController>();
+            SetRef(flightAudio, "session", session);
             var fxGo = new GameObject("FeedbackFx");
             fxGo.transform.SetParent(systems.transform, false);
             FeedbackFx fx = fxGo.AddComponent<FeedbackFx>();
@@ -402,6 +405,8 @@ namespace TowerGlide.EditorTools
         private static Sprite Knob => AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Knob.psd");
         private static Sprite RoundedSprite => AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd");
 
+        private static UiClickSound _click;
+
         private static Canvas CreateCanvas(string name)
         {
             var go = new GameObject(name, typeof(RectTransform));
@@ -412,6 +417,7 @@ namespace TowerGlide.EditorTools
             scaler.referenceResolution = new Vector2(1920f, 1080f);
             scaler.matchWidthOrHeight = 0.5f;
             go.AddComponent<GraphicRaycaster>();
+            _click = go.AddComponent<UiClickSound>();
 
             var es = new GameObject("EventSystem");
             es.AddComponent<EventSystem>();
@@ -475,6 +481,7 @@ namespace TowerGlide.EditorTools
             Image img = Panel(name, parent, anchor, anchor, pos, size, new Color(0.08f, 0.12f, 0.2f, 0.85f), RoundedSprite);
             Button btn = img.gameObject.AddComponent<Button>();
             UnityEventTools.AddPersistentListener(btn.onClick, onClick);
+            if (_click != null) UnityEventTools.AddPersistentListener(btn.onClick, _click.Play); // 클릭음(Phase 3)
             Label("Label", img.transform, new Vector2(0.5f, 0.5f), Vector2.zero, size, label, 34);
             return btn;
         }
@@ -603,6 +610,11 @@ namespace TowerGlide.EditorTools
             SetRef(hud, "boundaryWarning", warning.gameObject);
             SetRef(hud, "boundaryArrow", boundaryArrow.rectTransform);
             SetRef(hud, "nearMissFlash", flash);
+            // ---- 설정(일시정지 화면에서 열기) · 튜토리얼 ----
+            SettingsPanelController settingsPanel = BuildSettingsUi(canvas);
+            MenuButton("Settings", pausePanel.transform, center, new Vector2(0f, -280f), new Vector2(460f, 100f), "SETTINGS", settingsPanel.Show);
+            BuildTutorialUi(safe, session);
+
             SetRef(hud, "pausePanel", pausePanel.gameObject);
             SetRef(hud, "resultPanel", resultPanel.gameObject);
             SetRef(hud, "resultText", resultText);
@@ -683,6 +695,7 @@ namespace TowerGlide.EditorTools
             pedestal.position = camGo.transform.position + camGo.transform.forward * 26f + Vector3.down * 2f;
             HangarController hangar = BuildHangarUi(canvas, menu, group.gameObject, pedestal);
             SetRef(menu, "hangar", hangar);
+            SetRef(menu, "settings", BuildSettingsUi(canvas));
 
             // 메뉴 배경 건물 메시도 에셋으로 저장
             SaveMenuMeshes(bg);
@@ -758,6 +771,128 @@ namespace TowerGlide.EditorTools
             SetRef(hangar, "preview", preview);
             SetRef(hangar, "menu", menu);
             return hangar;
+        }
+
+        private static DefaultControls.Resources UiResources => new DefaultControls.Resources
+        {
+            standard = RoundedSprite,
+            background = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Background.psd"),
+            knob = Knob,
+            checkmark = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/Checkmark.psd"),
+        };
+
+        private static Slider SettingSlider(Transform parent, string name, Vector2 pos, out Text label, float min = 0f, float max = 1f)
+        {
+            label = Label($"{name}Label", parent, new Vector2(0.5f, 1f), pos + new Vector2(-200f, 0f), new Vector2(380f, 44f), name, 28, TextAnchor.MiddleLeft, FontStyle.Normal);
+            GameObject go = DefaultControls.CreateSlider(UiResources);
+            go.name = name;
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(parent, false);
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = pos + new Vector2(200f, 0f);
+            rt.sizeDelta = new Vector2(380f, 36f); // 터치하기 쉬운 높이
+            Slider s = go.GetComponent<Slider>();
+            s.minValue = min;
+            s.maxValue = max;
+            return s;
+        }
+
+        private static Toggle SettingToggle(Transform parent, string label, Vector2 pos)
+        {
+            GameObject go = DefaultControls.CreateToggle(UiResources);
+            go.name = label;
+            var rt = (RectTransform)go.transform;
+            rt.SetParent(parent, false);
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = new Vector2(380f, 48f);
+            Text t = go.GetComponentInChildren<Text>();
+            if (t != null)
+            {
+                t.text = label;
+                t.font = UiFont;
+                t.fontSize = 28;
+                t.color = Color.white;
+            }
+            Transform bg = go.transform.Find("Background");
+            if (bg != null) ((RectTransform)bg).sizeDelta = new Vector2(40f, 40f);
+            return go.GetComponent<Toggle>();
+        }
+
+        /// <summary>설정 화면(명세 5.5). 메인 메뉴·일시정지 화면 공용.</summary>
+        private static SettingsPanelController BuildSettingsUi(Canvas canvas)
+        {
+            Image panel = Panel("SettingsPanel", canvas.transform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, new Color(0.01f, 0.03f, 0.07f, 0.92f));
+            SettingsPanelController c = panel.gameObject.AddComponent<SettingsPanelController>();
+            Transform p = panel.transform;
+            Vector2 top = new Vector2(0.5f, 1f);
+            Label("Title", p, top, new Vector2(0f, -60f), new Vector2(800f, 70f), "SETTINGS", 52);
+
+            // 왼쪽 열: 그래픽·조작
+            float lx = -470f, rx = 470f;
+            Button quality = MenuButton("Quality", p, top, new Vector2(lx, -160f), new Vector2(420f, 80f), "그래픽", c.CycleQuality);
+            Button frame = MenuButton("FrameRate", p, top, new Vector2(lx, -255f), new Vector2(420f, 80f), "프레임", c.CycleFrameRate);
+            Slider sens = SettingSlider(p, "조작 감도", new Vector2(lx, -350f), out Text sensLabel, 0.5f, 1.5f);
+            Slider shake = SettingSlider(p, "카메라 흔들림", new Vector2(lx, -430f), out Text shakeLabel);
+            Toggle invert = SettingToggle(p, "피치 반전(위로 밀면 하강)", new Vector2(lx, -510f));
+            Toggle floating = SettingToggle(p, "플로팅 조이스틱", new Vector2(lx, -570f));
+
+            // 오른쪽 열: 소리·진동·기타
+            Slider master = SettingSlider(p, "전체 음량", new Vector2(rx, -160f), out Text masterLabel);
+            Slider music = SettingSlider(p, "음악", new Vector2(rx, -240f), out Text musicLabel);
+            Slider sfx = SettingSlider(p, "효과음", new Vector2(rx, -320f), out Text sfxLabel);
+            Toggle haptics = SettingToggle(p, "진동", new Vector2(rx, -400f));
+            MenuButton("Tutorial", p, top, new Vector2(rx - 115f, -490f), new Vector2(210f, 80f), "튜토리얼", c.ReplayTutorial);
+            MenuButton("Reset", p, top, new Vector2(rx + 115f, -490f), new Vector2(210f, 80f), "초기화", c.ResetToDefaults);
+            MenuButton("Licenses", p, top, new Vector2(rx - 115f, -585f), new Vector2(210f, 80f), "라이선스", c.ToggleLicenses);
+            MenuButton("Close", p, top, new Vector2(rx + 115f, -585f), new Vector2(210f, 80f), "닫기", c.Hide);
+            Text notice = Label("Notice", p, new Vector2(0.5f, 0f), new Vector2(0f, 70f), new Vector2(1200f, 44f), "", 26, TextAnchor.MiddleCenter, FontStyle.Normal);
+            notice.color = new Color(1f, 0.8f, 0.45f);
+
+            // 라이선스 고지 오버레이
+            Image lic = Panel("LicensePanel", p, new Vector2(0.15f, 0.1f), new Vector2(0.85f, 0.9f), Vector2.zero, Vector2.zero, new Color(0.04f, 0.07f, 0.12f, 0.98f), RoundedSprite);
+            Text licText = Label("Text", lic.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(1100f, 620f), "", 26, TextAnchor.UpperLeft, FontStyle.Normal);
+            MenuButton("CloseLicenses", lic.transform, new Vector2(0.5f, 0f), new Vector2(0f, 60f), new Vector2(260f, 80f), "닫기", c.ToggleLicenses);
+
+            SetRef(c, "panel", panel.gameObject);
+            SetRef(c, "qualityLabel", quality.GetComponentInChildren<Text>());
+            SetRef(c, "frameRateLabel", frame.GetComponentInChildren<Text>());
+            SetRef(c, "sensitivity", sens);
+            SetRef(c, "sensitivityLabel", sensLabel);
+            SetRef(c, "cameraShake", shake);
+            SetRef(c, "cameraShakeLabel", shakeLabel);
+            SetRef(c, "invertPitch", invert);
+            SetRef(c, "floatingJoystick", floating);
+            SetRef(c, "haptics", haptics);
+            SetRef(c, "masterVolume", master);
+            SetRef(c, "masterLabel", masterLabel);
+            SetRef(c, "musicVolume", music);
+            SetRef(c, "musicLabel", musicLabel);
+            SetRef(c, "sfxVolume", sfx);
+            SetRef(c, "sfxLabel", sfxLabel);
+            SetRef(c, "noticeText", notice);
+            SetRef(c, "licensePanel", lic.gameObject);
+            SetRef(c, "licenseText", licText);
+            return c;
+        }
+
+        /// <summary>첫 비행 조작 튜토리얼: 화면 위쪽 안내 + 진행 막대 + 건너뛰기.</summary>
+        private static void BuildTutorialUi(Transform safe, FlightSession session)
+        {
+            Image box = Panel("Tutorial", safe, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -230f), new Vector2(980f, 120f), new Color(0f, 0f, 0f, 0.55f), RoundedSprite);
+            Text text = Label("Instruction", box.transform, new Vector2(0.5f, 0.5f), new Vector2(-60f, 14f), new Vector2(820f, 56f), "", 34);
+            Image bar = Panel("ProgressBg", box.transform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-60f, -34f), new Vector2(700f, 10f), new Color(1f, 1f, 1f, 0.2f));
+            Image fill = Panel("Fill", bar.transform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, new Color(1f, 0.65f, 0.15f, 1f), RoundedSprite);
+            fill.type = Image.Type.Filled;
+            fill.fillMethod = Image.FillMethod.Horizontal;
+            var ctrlGo = new GameObject("TutorialController");
+            ctrlGo.transform.SetParent(safe, false);
+            TutorialController ctrl = ctrlGo.AddComponent<TutorialController>();
+            MenuButton("Skip", box.transform, new Vector2(1f, 0.5f), new Vector2(-80f, 0f), new Vector2(130f, 70f), "SKIP", ctrl.Skip);
+            SetRef(ctrl, "session", session);
+            SetRef(ctrl, "root", box.gameObject);
+            SetRef(ctrl, "instruction", text);
+            SetRef(ctrl, "progress", fill);
         }
 
         private static void SaveMenuMeshes(Transform root)

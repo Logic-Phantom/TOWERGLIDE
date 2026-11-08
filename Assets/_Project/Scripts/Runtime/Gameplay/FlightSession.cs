@@ -1,5 +1,6 @@
 using System.Collections;
 using TowerGlide.App;
+using TowerGlide.Core.Audio;
 using TowerGlide.Cameras;
 using TowerGlide.Core.Aircraft;
 using TowerGlide.Core.App;
@@ -73,6 +74,8 @@ namespace TowerGlide.Gameplay
         public AircraftFlightController Aircraft => aircraft;
         public AircraftDefinition AircraftDefinition => _definition;
         public bool IsWaitingForWorld { get; private set; }
+        public FlightInputRouter InputRouter => inputRouter;
+        public float LastThrottle => inputRouter != null ? inputRouter.LastInput.Throttle : 0f;
 
         /// <summary>
         /// 선택 기체 연결(AircraftSpawnService가 Awake에서 호출). 기체 교체는 비행 시작 전에만(애드온 명세 14.6).
@@ -107,6 +110,7 @@ namespace TowerGlide.Gameplay
         private void OnEnable()
         {
             SubscribeAircraft();
+            if (GameApp.Instance != null) GameApp.Instance.SettingsChanged += OnSettingsChanged;
             if (course != null) course.GateProcessed += OnGateProcessed;
             if (inputRouter != null)
             {
@@ -119,6 +123,7 @@ namespace TowerGlide.Gameplay
         private void OnDisable()
         {
             UnsubscribeAircraft();
+            if (GameApp.Instance != null) GameApp.Instance.SettingsChanged -= OnSettingsChanged;
             if (course != null) course.GateProcessed -= OnGateProcessed;
             if (inputRouter != null)
             {
@@ -185,6 +190,11 @@ namespace TowerGlide.Gameplay
         private Pose SpawnPose => new Pose(
             spawnPoint.position + Vector3.up * (_definition != null ? _definition.spawnHeightOffset : 0f),
             spawnPoint.rotation);
+
+        private void OnSettingsChanged()
+        {
+            if (GameApp.Instance != null) ApplySettings(GameApp.Instance.Settings);
+        }
 
         public void ApplySettings(SettingsData settings)
         {
@@ -262,6 +272,7 @@ namespace TowerGlide.Gameplay
 
             int points = _score.OnRingPassed(_runTime);
             GameApp.Instance?.Haptics.Play(HapticStrength.Light);
+            GameApp.Instance?.Audio?.PlaySfx(SfxKind.RingPass, 0.9f, 1f + Mathf.Min(0.3f, _score.CurrentCombo * 0.04f)); // 콤보마다 조금씩 높게
             if (feedbackFx != null) feedbackFx.PlayRingPass(gate.transform.position, gate.transform.rotation);
             hud?.ShowToast($"RING +{points}" + (_score.CurrentCombo > 0 ? $"  x{_score.CurrentCombo + 1}" : string.Empty));
             if (result == CheckpointPassResult.Completed) FinishRun(completed: true);
@@ -274,6 +285,7 @@ namespace TowerGlide.Gameplay
             int points = _score.OnNearMiss(proximity, aircraft.SpeedKmh);
             hud?.ShowToast($"NEAR MISS +{points}");
             hud?.FlashNearMiss(proximity);
+            GameApp.Instance?.Audio?.PlaySfx(SfxKind.NearMiss, 0.5f + 0.5f * proximity);
             GameApp.Instance?.Haptics.Play(HapticStrength.Light);
             if (feedbackFx != null)
             {
@@ -295,6 +307,7 @@ namespace TowerGlide.Gameplay
             chaseCamera.AddShake(Mathf.Clamp01(impactSpeed / 40f));
             if (feedbackFx != null) feedbackFx.PlayCrash(point, (aircraft.transform.position - point).normalized);
             GameApp.Instance?.Haptics.Play(HapticStrength.Heavy);
+            GameApp.Instance?.Audio?.PlaySfx(SfxKind.Crash, Mathf.Clamp01(0.4f + impactSpeed / 50f));
             hud?.ShowToast("CRASH");
             StartCoroutine(RespawnRoutine(penalty: true));
         }

@@ -1,5 +1,6 @@
 using System;
 using TowerGlide.Core.Aircraft;
+using TowerGlide.Core.Audio;
 using UnityEngine;
 
 namespace TowerGlide.Flight
@@ -50,6 +51,8 @@ namespace TowerGlide.Flight
         [Header("Assets")]
         public GameObject prefab;
         public AircraftFlightTuning tuning;
+        [Tooltip("엔진음 종류(애드온 명세 14.8 기체별 사운드 구분).")]
+        public EngineSoundKind engineSound = EngineSoundKind.Propeller;
         [Tooltip("격납고 카드 색(미리보기 이미지가 없을 때).")]
         public Color accentColor = new Color(0.86f, 0.12f, 0.12f);
 

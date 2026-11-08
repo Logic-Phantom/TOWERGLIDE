@@ -9,8 +9,7 @@ using UnityEngine.UI;
 namespace TowerGlide.UI
 {
     /// <summary>
-    /// 메인 메뉴(명세 5.2): FREE FLIGHT / SKYLINE RUN / HANGAR(기체 선택, 애드온 명세 14.5) + 최고 기록·현재 기체 표시.
-    /// SETTINGS 화면은 Phase 3.
+    /// 메인 메뉴(명세 5.2): FREE FLIGHT / SKYLINE RUN / HANGAR(기체 선택, 애드온 명세 14.5) / SETTINGS + 최고 기록·현재 기체 표시.
     /// </summary>
     public sealed class MainMenuController : MonoBehaviour
     {
@@ -18,6 +17,7 @@ namespace TowerGlide.UI
         [SerializeField] private Text noticeText;
         [SerializeField] private Text aircraftText;
         [SerializeField] private HangarController hangar;
+        [SerializeField] private SettingsPanelController settings;
         [Tooltip("오픈 데이터 출처 표시(애드온 명세 3.3·8). 실제 지도 데이터를 쓰기 전에는 비어 있다.")]
         [SerializeField] private Text creditsText;
 
@@ -47,7 +47,11 @@ namespace TowerGlide.UI
             else ShowNotice("HANGAR를 불러오지 못했습니다.");
         }
 
-        public void OpenSettings() => ShowNotice("SETTINGS는 준비 중입니다.");
+        public void OpenSettings()
+        {
+            if (settings != null) settings.Show();
+            else ShowNotice("SETTINGS를 불러오지 못했습니다.");
+        }
 
         private void StartMode(FlightMode mode)
         {

@@ -1,4 +1,5 @@
 using TowerGlide.Core.Aircraft;
+using TowerGlide.Core.Audio;
 using TowerGlide.Flight;
 using TowerGlide.Gameplay;
 using UnityEditor;
@@ -56,6 +57,11 @@ namespace TowerGlide.EditorTools
             AircraftDefinition liner = Definition(AircraftIds.Cityliner180, "Cityliner 180", AircraftCategory.Airliner,
                 "큰 동체와 날개, 높은 관성의 중형 여객기. 롤이 느리고 선회 반경이 넓다 — 도심 위 고고도·넓은 공간용.",
                 r.LinerPrefab, linerTuning, new Color(0.12f, 0.32f, 0.62f), 38f, 34f, 11f, 260f, AircraftTags.WideAirspace, UnlockRule.Always);
+
+            scout.engineSound = EngineSoundKind.Propeller;
+            viper.engineSound = EngineSoundKind.Jet;
+            liner.engineSound = EngineSoundKind.Turbofan;
+            foreach (AircraftDefinition d in new[] { scout, viper, liner }) EditorUtility.SetDirty(d);
 
             AircraftDefinition aero = Definition(AircraftIds.AeroS2, "Aero S-2", AircraftCategory.Aerobatic,
                 "롤·피치 반응이 빠른 곡예기(개발 예정).", null, null, Color.gray, 6.5f, 7.5f, 2.2f, 0f,
