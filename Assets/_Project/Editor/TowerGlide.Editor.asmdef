@@ -1,0 +1,23 @@
+{
+  "name": "TowerGlide.Editor",
+  "rootNamespace": "TowerGlide.EditorTools",
+  "references": [
+    "TowerGlide.Core",
+    "TowerGlide.Runtime",
+    "Unity.InputSystem",
+    "UnityEngine.UI",
+    "Unity.RenderPipelines.Core.Runtime",
+    "Unity.RenderPipelines.Universal.Runtime"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

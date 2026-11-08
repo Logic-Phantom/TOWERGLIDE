@@ -1,0 +1,71 @@
+name: unity-build
+
+# Unity 테스트·빌드(GameCI). Unity 라이선스 시크릿이 필요하므로 수동 실행만 한다.
+# 준비(소유자): docs/RELEASE_CHECKLIST.md ▸ "CI 빌드" — UNITY_LICENSE(또는 UNITY_EMAIL/UNITY_PASSWORD) 시크릿 등록.
+# iOS: Unity가 Xcode 프로젝트를 만들고, macOS 러너에서 Archive/업로드는 별도 단계(fastlane)로 추가 예정.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Android | iOS | tests'
+        required: true
+        default: 'tests'
+
+env:
+  UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+  UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+  UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+
+jobs:
+  tests:
+    if: ${{ github.event.inputs.target == 'tests' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-${{ hashFiles('Packages/manifest.json') }}
+      - uses: game-ci/unity-test-runner@v4
+        with:
+          testMode: all
+
+  android:
+    if: ${{ github.event.inputs.target == 'Android' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache@v4
+        with:
+          path: Library
+          key: Library-Android-${{ hashFiles('Packages/manifest.json') }}
+      - name: Decode upload keystore
+        run: |
+          echo "${{ secrets.TOWERGLIDE_KEYSTORE_BASE64 }}" | base64 -d > "$RUNNER_TEMP/upload.keystore"
+          echo "TOWERGLIDE_KEYSTORE_PATH=$RUNNER_TEMP/upload.keystore" >> "$GITHUB_ENV"
+      - uses: game-ci/unity-builder@v4
+        env:
+          TOWERGLIDE_KEYSTORE_PASS: ${{ secrets.TOWERGLIDE_KEYSTORE_PASS }}
+          TOWERGLIDE_KEY_ALIAS: ${{ secrets.TOWERGLIDE_KEY_ALIAS }}
+          TOWERGLIDE_KEY_ALIAS_PASS: ${{ secrets.TOWERGLIDE_KEY_ALIAS_PASS }}
+        with:
+          targetPlatform: Android
+          buildMethod: TowerGlide.EditorTools.TowerglideBuild.BuildAndroidAab
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-aab
+          path: Builds/Android/*.aab
+
+  ios-xcode:
+    if: ${{ github.event.inputs.target == 'iOS' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: game-ci/unity-builder@v4
+        with:
+          targetPlatform: iOS
+          buildMethod: TowerGlide.EditorTools.TowerglideBuild.BuildIosXcode
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-xcode-project
+          path: Builds/iOS

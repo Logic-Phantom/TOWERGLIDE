@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Unity 없이 순수 로직(TowerGlide.Core)과 EditMode 테스트를 일반 .NET으로 컴파일·실행한다(D-012).
+    - Core는 noEngineReferences 어셈블리라 UnityEngine 없이 빌드된다. Unity API를 쓰면 여기서 바로 컴파일 오류가 난다(경계 감시).
+    - LangVersion 9 = Unity 6 C# 버전. 더 새 문법을 쓰면 Unity에서 깨지므로 여기서 막는다.
+    실행: dotnet test tools/core-tests
+  -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <RootNamespace>TowerGlide.Tests</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="../../Assets/_Project/Scripts/Core/**/*.cs" />
+    <Compile Include="../../Assets/_Project/Tests/EditMode/**/*.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="NUnit" Version="3.14.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="4.6.0" />
+  </ItemGroup>
+</Project>
