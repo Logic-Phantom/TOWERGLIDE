@@ -57,6 +57,21 @@ namespace TowerGlide.Cameras
         public CameraMode Mode { get; private set; } = CameraMode.Chase;
         public AircraftFlightController Target => target;
 
+        /// <summary>기체 크기별 카메라(애드온 명세 14.8).</summary>
+        public void ApplyProfile(AircraftCameraProfile p)
+        {
+            chaseOffset = p.chaseOffset;
+            lookAhead = p.lookAhead;
+            baseFov = p.baseFov;
+            maxExtraFov = p.maxExtraFov;
+            fovMaxAtSpeed = Mathf.Max(1f, p.fovMaxAtSpeed);
+            collisionRadius = p.collisionRadius;
+            minDistance = p.minDistance;
+            cockpitOffset = p.cockpitOffset;
+            if (_camera != null) _camera.fieldOfView = baseFov;
+            SnapToTarget();
+        }
+
         public void SetTarget(AircraftFlightController aircraft)
         {
             target = aircraft;

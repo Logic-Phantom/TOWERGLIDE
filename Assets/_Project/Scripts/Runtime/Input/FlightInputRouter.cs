@@ -30,6 +30,9 @@ namespace TowerGlide.Input
 
         public void SetShaping(InputShapingSettings shaping) => _shaping = shaping;
 
+        /// <summary>선택 기체로 교체(AircraftSpawnService). 입력 구조는 기종과 무관(애드온 명세 14.4).</summary>
+        public void SetAircraft(AircraftFlightController value) => aircraft = value;
+
         /// <summary>일시정지·결과 화면·복귀 연출 중에는 입력을 중립으로 고정한다.</summary>
         public void SetFlightInputEnabled(bool value)
         {

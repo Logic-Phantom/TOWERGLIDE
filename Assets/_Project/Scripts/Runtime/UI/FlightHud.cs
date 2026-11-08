@@ -3,6 +3,7 @@ using TowerGlide.Core.Gameplay;
 using TowerGlide.Flight;
 using TowerGlide.Gameplay;
 using TowerGlide.Input;
+using TowerGlide.World;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -46,6 +47,13 @@ namespace TowerGlide.UI
         [SerializeField] private Text resultText;
         [SerializeField] private GameObject endFreeFlightButton;
 
+        [Header("Open world (애드온 명세 8)")]
+        [Tooltip("현재 비행 방향 — 예: 'NE 045°'.")]
+        [SerializeField] private Text compassText;
+        [Tooltip("개발 빌드·에디터에서만 보이는 청크 스트리밍 상태.")]
+        [SerializeField] private Text streamingDebugText;
+        [SerializeField] private WorldStreamingManager streaming;
+
         [Header("Controls")]
         [SerializeField] private VirtualJoystick joystick;
         [SerializeField] private Camera worldCamera;
@@ -59,10 +67,14 @@ namespace TowerGlide.UI
         private float _toastUntil;
         private float _flashUntil;
         private float _flashStrength;
+        private int _lastHeading = int.MinValue;
+        private float _debugTimer;
+        private static readonly string[] Cardinals = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
 
         private void Awake()
         {
             if (nearMissFlash != null) nearMissFlash.canvasRenderer.SetAlpha(0f);
+            if (streamingDebugText != null) streamingDebugText.gameObject.SetActive(Debug.isDebugBuild && streaming != null);
             if (boundaryArrow != null) boundaryArrow.gameObject.SetActive(false);
             if (pausePanel != null) pausePanel.SetActive(false);
             if (resultPanel != null) resultPanel.SetActive(false);
@@ -105,6 +117,17 @@ namespace TowerGlide.UI
                 _lastAltitude = alt;
                 altitudeText.text = SetInt(alt, " m");
             }
+            UpdateCompass(aircraft.transform.forward);
+            if (streamingDebugText != null && streamingDebugText.gameObject.activeSelf)
+            {
+                _debugTimer += Time.unscaledDeltaTime;
+                if (_debugTimer > 0.5f)
+                {
+                    _debugTimer = 0f;
+                    streamingDebugText.text = streaming.DebugSummary(aircraft.transform.position);
+                }
+            }
+
             if (boostFill != null)
             {
                 boostFill.fillAmount = aircraft.BoostNormalized;
@@ -148,6 +171,18 @@ namespace TowerGlide.UI
                 nearMissFlash.canvasRenderer.SetAlpha(remaining * _flashStrength);
                 if (remaining <= 0f) _flashStrength = 0f;
             }
+        }
+
+        /// <summary>나침반: 월드 +Z = 북(WorldCoordinateSystem 규칙). 1° 단위로 바뀔 때만 문자열 갱신.</summary>
+        private void UpdateCompass(Vector3 forward)
+        {
+            if (compassText == null) return;
+            float deg = Mathf.Atan2(forward.x, forward.z) * Mathf.Rad2Deg;
+            int heading = (Mathf.RoundToInt(deg) + 360) % 360;
+            if (heading == _lastHeading) return;
+            _lastHeading = heading;
+            _sb.Clear().Append(Cardinals[Mathf.RoundToInt(heading / 45f) % 8]).Append(' ').Append(heading.ToString("000")).Append('°');
+            compassText.text = _sb.ToString();
         }
 
         /// <summary>근접 회피 피드백: 가장자리 빛이 잠깐(근접할수록 진하게). 과한 연출 금지 — 최대 알파 0.5.</summary>

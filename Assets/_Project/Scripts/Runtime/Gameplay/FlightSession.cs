@@ -1,6 +1,7 @@
 using System.Collections;
 using TowerGlide.App;
 using TowerGlide.Cameras;
+using TowerGlide.Core.Aircraft;
 using TowerGlide.Core.App;
 using TowerGlide.Core.Gameplay;
 using TowerGlide.Core.Input;
@@ -32,6 +33,9 @@ namespace TowerGlide.Gameplay
         [SerializeField] private FlightHud hud;
         [Tooltip("충돌·링·근접 회피 파티클(선택).")]
         [SerializeField] private FeedbackFx feedbackFx;
+        [Tooltip("청크 스트리밍(OW1). 있으면 시작 지점 주변 청크가 준비될 때까지 기체를 고정하고 기다린다.")]
+        [SerializeField] private WorldStreamingManager streaming;
+        [SerializeField] private float streamingReadyTimeout = 15f;
 
         [Header("Rules")]
         [Tooltip("에디터에서 이 씬을 바로 Play할 때 사용할 모드(메뉴에서 들어오면 메뉴 선택이 우선).")]
@@ -56,6 +60,8 @@ namespace TowerGlide.Gameplay
         private Vector3 _lastPosition;
         private bool _respawning;
         private RunResult _lastResult;
+        private AircraftDefinition _definition;
+        private bool _subscribedAircraft;
 
         public FlightMode Mode => _mode;
         public GameState State => _state.Current;
@@ -64,17 +70,43 @@ namespace TowerGlide.Gameplay
         public CheckpointCourse Course => course;
         public float TimeLeft => _timeLeft;
         public RunResult LastResult => _lastResult;
+        public AircraftFlightController Aircraft => aircraft;
+        public AircraftDefinition AircraftDefinition => _definition;
+        public bool IsWaitingForWorld { get; private set; }
 
-        private void Awake()
+        /// <summary>
+        /// 선택 기체 연결(AircraftSpawnService가 Awake에서 호출). 기체 교체는 비행 시작 전에만(애드온 명세 14.6).
+        /// </summary>
+        public void BindAircraft(AircraftFlightController value, AircraftDefinition definition)
         {
-            if (aircraft == null || inputRouter == null || chaseCamera == null || spawnPoint == null)
-                Debug.LogError($"[{nameof(FlightSession)}] 필수 참조가 비어 있습니다. TOWERGLIDE ▸ 2. 씬 생성으로 씬을 다시 만드세요.", this);
+            UnsubscribeAircraft();
+            aircraft = value;
+            collisionHandler = value != null ? value.GetComponent<AircraftCollisionHandler>() : null;
+            nearMissSensor = value != null ? value.GetComponentInChildren<NearMissSensor>() : null;
+            _definition = definition;
+            if (definition != null) spawnSpeed = definition.SpawnSpeed;
+            if (isActiveAndEnabled) SubscribeAircraft();
+        }
+
+        private void SubscribeAircraft()
+        {
+            if (_subscribedAircraft) return;
+            if (collisionHandler != null) collisionHandler.Crashed += OnCrashed;
+            if (nearMissSensor != null) nearMissSensor.NearMiss += OnNearMiss;
+            _subscribedAircraft = true;
+        }
+
+        private void UnsubscribeAircraft()
+        {
+            if (!_subscribedAircraft) return;
+            if (collisionHandler != null) collisionHandler.Crashed -= OnCrashed;
+            if (nearMissSensor != null) nearMissSensor.NearMiss -= OnNearMiss;
+            _subscribedAircraft = false;
         }
 
         private void OnEnable()
         {
-            if (collisionHandler != null) collisionHandler.Crashed += OnCrashed;
-            if (nearMissSensor != null) nearMissSensor.NearMiss += OnNearMiss;
+            SubscribeAircraft();
             if (course != null) course.GateProcessed += OnGateProcessed;
             if (inputRouter != null)
             {
@@ -86,8 +118,7 @@ namespace TowerGlide.Gameplay
 
         private void OnDisable()
         {
-            if (collisionHandler != null) collisionHandler.Crashed -= OnCrashed;
-            if (nearMissSensor != null) nearMissSensor.NearMiss -= OnNearMiss;
+            UnsubscribeAircraft();
             if (course != null) course.GateProcessed -= OnGateProcessed;
             if (inputRouter != null)
             {
@@ -99,11 +130,25 @@ namespace TowerGlide.Gameplay
             AudioListener.pause = false;
         }
 
-        private void Start()
+        private IEnumerator Start()
         {
+            if (aircraft == null || inputRouter == null || chaseCamera == null || spawnPoint == null)
+            {
+                Debug.LogError($"[{nameof(FlightSession)}] 필수 참조가 비어 있습니다. TOWERGLIDE ▸ 2. 씬 생성으로 씬을 다시 만드세요.", this);
+                yield break;
+            }
+
             GameApp app = GameApp.Instance;
             bool fromMenu = app != null && app.State.Current == GameState.Loading;
             _mode = fromMenu ? app.PendingMode : editorDefaultMode;
+
+            // 기체-모드 호환성(14.7): 소형기 전용 링 코스를 큰 기체에 강제하지 않는다
+            if (_definition != null && !AircraftRules.CanPlay(_mode, _definition.tags, out string reason))
+            {
+                Debug.Log($"[{nameof(FlightSession)}] {_definition.displayName}: {reason}");
+                _mode = FlightMode.FreeFlight;
+                if (app != null) app.PendingMode = FlightMode.FreeFlight;
+            }
             if (app != null)
             {
                 if (!fromMenu) app.State.TryTransition(GameState.Loading); // 에디터에서 이 씬을 바로 Play한 경우
@@ -112,8 +157,34 @@ namespace TowerGlide.Gameplay
 
             SettingsData settings = app != null ? app.Settings : new SettingsData();
             ApplySettings(settings);
+
+            // 청크 스트리밍(OW1): 시작 지점 주변이 로드될 때까지 기체를 고정 — 빈 도시로 출발하거나 건물을 통과하지 않게
+            if (streaming != null)
+            {
+                IsWaitingForWorld = true;
+                inputRouter.SetFlightInputEnabled(false);
+                aircraft.Body.isKinematic = true;
+                aircraft.ResetTo(SpawnPose.position, SpawnPose.rotation, 0f);
+                hud?.ShowToast("도시 불러오는 중…");
+                streaming.Begin(SpawnPose.position);
+                float waited = 0f;
+                while (!streaming.IsReadyAround(SpawnPose.position) && waited < streamingReadyTimeout)
+                {
+                    waited += Time.unscaledDeltaTime;
+                    yield return null;
+                }
+                if (waited >= streamingReadyTimeout)
+                    Debug.LogWarning($"[{nameof(FlightSession)}] 시작 지점 청크가 {streamingReadyTimeout}초 안에 준비되지 않았습니다 — 원거리 실루엣 상태로 시작합니다.");
+                aircraft.Body.isKinematic = false;
+                IsWaitingForWorld = false;
+            }
+
             BeginRun();
         }
+
+        private Pose SpawnPose => new Pose(
+            spawnPoint.position + Vector3.up * (_definition != null ? _definition.spawnHeightOffset : 0f),
+            spawnPoint.rotation);
 
         public void ApplySettings(SettingsData settings)
         {
@@ -141,7 +212,7 @@ namespace TowerGlide.Gameplay
                 if (skyline) course.ResetCourse();
             }
 
-            Pose start = new Pose(spawnPoint.position, spawnPoint.rotation);
+            Pose start = SpawnPose;
             _safePose = start;
             aircraft.ResetTo(start.position, start.rotation, spawnSpeed);
             _lastPosition = start.position;
@@ -270,7 +341,7 @@ namespace TowerGlide.Gameplay
             if (_mode == FlightMode.SkylineRun && course != null)
             {
                 CheckpointGate last = course.LastPassedGate;
-                return last != null ? last.RespawnPoseAfterPass : new Pose(spawnPoint.position, spawnPoint.rotation);
+                return last != null ? last.RespawnPoseAfterPass : SpawnPose;
             }
             return _safePose;
         }

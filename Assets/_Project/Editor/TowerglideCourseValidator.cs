@@ -3,6 +3,9 @@ using System.Text;
 using TowerGlide.Core.World;
 using TowerGlide.Gameplay;
 using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine.SceneManagement;
+using TowerGlide.World;
 using UnityEngine;
 
 namespace TowerGlide.EditorTools
@@ -33,6 +36,32 @@ namespace TowerGlide.EditorTools
                 return issues;
             }
 
+            // 청크 스트리밍(OW1): 건물·장애물은 청크 씬에 있으므로 검사 동안 모두 Additive로 연다
+            var opened = new List<Scene>();
+            var catalog = AssetDatabase.LoadAssetAtPath<WorldChunkCatalog>(TowerglideSceneBuilder.ChunkCatalogPath);
+            if (catalog != null)
+            {
+                foreach (WorldChunkCatalog.Entry e in catalog.Entries)
+                {
+                    if (string.IsNullOrEmpty(e.scenePath) || SceneManager.GetSceneByPath(e.scenePath).isLoaded) continue;
+                    opened.Add(EditorSceneManager.OpenScene(e.scenePath, OpenSceneMode.Additive));
+                }
+            }
+            try
+            {
+                CheckGeometry(course, issues);
+            }
+            finally
+            {
+                foreach (Scene sc in opened) EditorSceneManager.CloseScene(sc, true);
+            }
+
+            Report(issues, showDialog);
+            return issues;
+        }
+
+        private static void CheckGeometry(CheckpointCourse course, List<string> issues)
+        {
             Physics.SyncTransforms();
             CheckpointGate[] gates = course.GetComponentsInChildren<CheckpointGate>(true);
             Transform spawn = GameObject.Find("SpawnPoint")?.transform;
@@ -65,9 +94,6 @@ namespace TowerGlide.EditorTools
                 prev = g.position;
                 prevGate = g;
             }
-
-            Report(issues, showDialog);
-            return issues;
         }
 
         private static bool IsOwnRing(Collider c, Transform gate) => gate != null && c.transform.IsChildOf(gate);

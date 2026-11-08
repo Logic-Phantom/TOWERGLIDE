@@ -23,18 +23,17 @@ namespace TowerGlide.EditorTools
 
         public sealed class Set
         {
-            public GameObject Aircraft, Gate, CraneStatic, CraneRotating, Drone, Billboard, Skybridge, Cable, Antenna, CargoBalloon;
+            public GameObject Gate, CraneStatic, CraneRotating, Drone, Billboard, Skybridge, Cable, Antenna, CargoBalloon;
             public ParticleSystem FxCrash, FxRing, FxNearMiss;
         }
 
-        public static Set CreateAll(TowerglideMaterials m, AircraftFlightTuning tuning)
+        public static Set CreateAll(TowerglideMaterials m)
         {
             EnsureFolder(ObstaclesDir);
             EnsureFolder(AircraftDir);
             EnsureFolder(VfxDir);
             return new Set
             {
-                Aircraft = Save(BuildAircraft(m, tuning), $"{AircraftDir}/Aircraft.prefab"),
                 Gate = Save(BuildGate(m), $"{ObstaclesDir}/CheckpointRing.prefab"),
                 CraneStatic = Save(BuildCrane(m, "Crane_Static", 110f, 95f, hookAt: 35f, rotateDegPerSec: 0f), $"{ObstaclesDir}/Crane_Static.prefab"),
                 CraneRotating = Save(BuildCrane(m, "Crane_Rotating", 150f, 132f, hookAt: 56f, rotateDegPerSec: 6f), $"{ObstaclesDir}/Crane_Rotating.prefab"),
@@ -65,44 +64,7 @@ namespace TowerGlide.EditorTools
             return go;
         }
 
-        // ------------------------------------------------------------------ 기체
-
-        private static GameObject BuildAircraft(TowerglideMaterials m, AircraftFlightTuning tuning)
-        {
-            var root = new GameObject("Aircraft");
-            Rigidbody rb = root.AddComponent<Rigidbody>();
-            rb.mass = 900f;
-            CapsuleCollider body = root.AddComponent<CapsuleCollider>();
-            body.direction = 2;
-            body.radius = 0.8f;
-            body.height = 7f;
-            BoxCollider wings = root.AddComponent<BoxCollider>();
-            wings.center = new Vector3(0f, 0f, 0.3f);
-            wings.size = new Vector3(8.4f, 0.35f, 1.8f);
-
-            Transform v = new GameObject("Visual").transform;
-            v.SetParent(root.transform, false);
-            Visual(PrimitiveType.Capsule, "Fuselage", v, Vector3.zero, new Vector3(1.4f, 3.5f, 1.4f), m.AircraftBody, new Vector3(90f, 0f, 0f));
-            Visual(PrimitiveType.Sphere, "Canopy", v, new Vector3(0f, 0.65f, 0.6f), new Vector3(0.9f, 0.7f, 1.8f), m.Canopy);
-            Visual(PrimitiveType.Cube, "Wing", v, new Vector3(0f, 0f, 0.3f), new Vector3(8.4f, 0.18f, 1.7f), m.AircraftAccent);
-            Visual(PrimitiveType.Cube, "WingStripe", v, new Vector3(0f, 0.1f, 0.3f), new Vector3(2.2f, 0.05f, 1.72f), m.AircraftBody);
-            Visual(PrimitiveType.Cube, "TailPlane", v, new Vector3(0f, 0.15f, -3.1f), new Vector3(3.2f, 0.12f, 0.9f), m.AircraftAccent);
-            Visual(PrimitiveType.Cube, "TailFin", v, new Vector3(0f, 0.9f, -3.1f), new Vector3(0.12f, 1.5f, 1.0f), m.AircraftAccent);
-            Visual(PrimitiveType.Cube, "Propeller", v, new Vector3(0f, 0f, 3.6f), new Vector3(2.2f, 0.18f, 0.05f), m.Drone);
-
-            AircraftFlightController controller = root.AddComponent<AircraftFlightController>();
-            SetRef(controller, "tuning", tuning);
-            root.AddComponent<AircraftCollisionHandler>();
-
-            var sensorGo = new GameObject("NearMissSensor");
-            sensorGo.transform.SetParent(root.transform, false);
-            SphereCollider sphere = sensorGo.AddComponent<SphereCollider>();
-            sphere.isTrigger = true;
-            sphere.radius = 7f;
-            NearMissSensor sensor = sensorGo.AddComponent<NearMissSensor>();
-            SetRef(sensor, "aircraft", controller);
-            return root;
-        }
+        // 기체 프리팹은 TowerglideAircraftFactory(기종별 라인업)가 만든다.
 
         // ------------------------------------------------------------------ 링
 

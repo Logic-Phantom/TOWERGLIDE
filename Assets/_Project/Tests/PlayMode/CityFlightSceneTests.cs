@@ -1,6 +1,7 @@
 using System.Collections;
 using NUnit.Framework;
 using TowerGlide.App;
+using TowerGlide.Core.Aircraft;
 using TowerGlide.Core.App;
 using TowerGlide.Core.Gameplay;
 using TowerGlide.Flight;
@@ -22,13 +23,18 @@ namespace TowerGlide.Tests.PlayMode
 
         private static bool SceneAvailable() => SceneUtility.GetBuildIndexByScenePath("Assets/_Project/Scenes/CityFlight.unity") >= 0;
 
-        private IEnumerator LoadSkylineRun()
+        private IEnumerator LoadSkylineRun() => LoadFlight(FlightMode.SkylineRun, AircraftIds.ScoutP1);
+
+        /// <summary>지정 기체·모드로 CityFlight를 열고 청크 스트리밍 준비(시작 대기)가 끝날 때까지 기다린다.</summary>
+        internal IEnumerator LoadFlight(FlightMode mode, string aircraftId)
         {
             if (!SceneAvailable()) Assert.Ignore("CityFlight 씬이 Build Settings에 없습니다 — TOWERGLIDE ▸ 2. 씬 생성 후 다시 실행");
 
             GameApp app = GameApp.Instance;
             Assert.IsNotNull(app, "GameApp은 BeforeSceneLoad에서 자동 생성돼야 함");
-            app.PendingMode = FlightMode.SkylineRun;
+            if (app.Aircraft?.Catalog != null)
+                Assert.IsTrue(app.Aircraft.Select(app.Aircraft.Catalog.Find(aircraftId)), $"{aircraftId} 선택 가능해야 함");
+            app.PendingMode = mode;
             if (!app.State.TryTransition(GameState.Loading))
             {
                 app.State.TryTransition(GameState.MainMenu);
@@ -39,10 +45,20 @@ namespace TowerGlide.Tests.PlayMode
             yield return null; // Start 실행
 
             _session = Object.FindFirstObjectByType<FlightSession>();
-            _aircraft = Object.FindFirstObjectByType<AircraftFlightController>();
             Assert.IsNotNull(_session);
+            float t = 0f;
+            while ((_session.IsWaitingForWorld || _session.State != GameState.Flying) && t < 20f)
+            {
+                t += Time.unscaledDeltaTime;
+                yield return null;
+            }
+            Assert.AreEqual(GameState.Flying, _session.State, "청크 준비 후 비행 시작");
+            _aircraft = _session.Aircraft;
             Assert.IsNotNull(_aircraft);
+            Session = _session;
         }
+
+        internal FlightSession Session { get; private set; }
 
         [TearDown]
         public void TearDown()
@@ -89,12 +105,18 @@ namespace TowerGlide.Tests.PlayMode
         public IEnumerator CrashIsCountedThenAircraftRespawns()
         {
             yield return LoadSkylineRun();
+            // 청크 스트리밍: 지금 로드된 청크의 건물 중 기체와 가장 가까운 것(실루엣은 충돌체가 없음)
             ObstacleMarker building = null;
+            float best = float.MaxValue;
             foreach (ObstacleMarker m in Object.FindObjectsByType<ObstacleMarker>(FindObjectsSortMode.None))
             {
                 if (m.Type != ObstacleType.Building) continue;
-                building = m;
-                break;
+                float d = Vector3.Distance(m.transform.position, _aircraft.transform.position);
+                if (d < best)
+                {
+                    best = d;
+                    building = m;
+                }
             }
             Assume.That(building != null, "건물이 없는 씬");
 
@@ -151,6 +173,12 @@ namespace TowerGlide.Tests.PlayMode
             yield return null;
             FlightSession fresh = Object.FindFirstObjectByType<FlightSession>();
             Assert.IsNotNull(fresh);
+            float t = 0f;
+            while (fresh.State != GameState.Flying && t < 20f) // 청크 준비 대기
+            {
+                t += Time.unscaledDeltaTime;
+                yield return null;
+            }
             Assert.AreEqual(GameState.Flying, fresh.State);
             Assert.AreEqual(FlightMode.SkylineRun, fresh.Mode, "재시작은 같은 모드");
             Assert.AreEqual(1f, Time.timeScale);

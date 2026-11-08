@@ -40,6 +40,17 @@ namespace TowerGlide.Flight
         {
             tuning = value;
             _boost = tuning != null ? new BoostMeter(tuning.ToBoostSettings()) : null;
+            if (_rb != null) ApplyBodySettings();
+        }
+
+        /// <summary>기종별 질량·관성(충돌 반응용). 조작감 수치는 가속도 기반이라 질량과 무관(D-035).</summary>
+        private void ApplyBodySettings()
+        {
+            if (tuning == null || _rb == null) return;
+            _rb.mass = tuning.mass;
+            _rb.ResetInertiaTensor();
+            if (tuning.inertiaTensorScale != Vector3.one)
+                _rb.inertiaTensor = Vector3.Scale(_rb.inertiaTensor, tuning.inertiaTensorScale);
         }
 
         /// <summary>Update 단계에서 호출. 실제 소비는 FixedUpdate.</summary>
@@ -55,8 +66,11 @@ namespace TowerGlide.Flight
             _rb.position = position;
             _rb.rotation = rotation;
             transform.SetPositionAndRotation(position, rotation);
-            _rb.linearVelocity = rotation * Vector3.forward * Mathf.Max(0f, initialSpeed);
-            _rb.angularVelocity = Vector3.zero;
+            if (!_rb.isKinematic) // 키네마틱(스트리밍 대기 중)에는 속도 설정 불가
+            {
+                _rb.linearVelocity = rotation * Vector3.forward * Mathf.Max(0f, initialSpeed);
+                _rb.angularVelocity = Vector3.zero;
+            }
             _input = FlightInput.Neutral;
             _boost?.Refill();
         }
@@ -71,6 +85,7 @@ namespace TowerGlide.Flight
             _rb.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             _rb.maxAngularVelocity = 10f;
             if (tuning != null && _boost == null) _boost = new BoostMeter(tuning.ToBoostSettings());
+            ApplyBodySettings();
             if (tuning == null) Debug.LogError($"[{nameof(AircraftFlightController)}] AircraftFlightTuning이 연결되지 않았습니다.", this);
         }
 
@@ -96,13 +111,14 @@ namespace TowerGlide.Flight
             BankDeg = bankRad * Mathf.Rad2Deg;
 
             // ---- 추력 / 부스트 ----
-            bool boosting = _boost.Tick(dt, input.Boost);
+            bool boosting = _boost.Tick(dt, input.Boost && tuning.boostEnabled);
             float targetSpeed = boosting
                 ? tuning.boostMaxSpeed
                 : AeroModel.TargetSpeed(input.Throttle, tuning.minFlightSpeed, tuning.cruiseSpeed, tuning.maxSpeed);
             float forwardSpeed = Vector3.Dot(velocity, forward);
             float maxThrust = tuning.maxThrustAcceleration + (boosting ? tuning.boostExtraAcceleration : 0f);
-            float thrust = AeroModel.ThrustAcceleration(forwardSpeed, targetSpeed, maxThrust, tuning.thrustResponsiveness);
+            float dragNow = AeroModel.DragAcceleration(speed, tuning.dragFactor, tuning.airBrakeDragMultiplier, false);
+            float thrust = AeroModel.ThrustWithDragCompensation(forwardSpeed, targetSpeed, dragNow, maxThrust, tuning.thrustResponsiveness);
             if (input.AirBrake) thrust = 0f;
             _rb.AddForce(forward * thrust, ForceMode.Acceleration);
 

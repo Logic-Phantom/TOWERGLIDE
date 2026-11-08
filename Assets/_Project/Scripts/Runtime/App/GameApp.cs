@@ -1,6 +1,7 @@
 using TowerGlide.Core.App;
 using TowerGlide.Core.Gameplay;
 using TowerGlide.Core.Save;
+using TowerGlide.Flight;
 using TowerGlide.Platform;
 using TowerGlide.Save;
 using UnityEngine;
@@ -19,6 +20,8 @@ namespace TowerGlide.App
         public LocalSaveService Save { get; private set; }
         public IHapticService Haptics { get; private set; }
         public GameStateMachine State { get; private set; }
+        /// <summary>격납고 기체 선택(애드온 명세 14).</summary>
+        public AircraftSelectionService Aircraft { get; private set; }
 
         /// <summary>메인 메뉴 → 비행 씬으로 넘기는 모드 선택. 비행 씬을 직접 Play하면 기본값(Free Flight).</summary>
         public FlightMode PendingMode { get; set; } = FlightMode.FreeFlight;
@@ -42,6 +45,7 @@ namespace TowerGlide.App
             Save = new LocalSaveService();
             Save.Load();
             Haptics = new HapticService();
+            Aircraft = new AircraftSelectionService(Save, Resources.Load<AircraftCatalog>(AircraftSelectionService.CatalogResourcePath));
             ApplySettings();
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             State.TryTransition(GameState.MainMenu);

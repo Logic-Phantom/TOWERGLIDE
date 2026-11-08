@@ -11,6 +11,13 @@ namespace TowerGlide.Flight
     [CreateAssetMenu(menuName = "TOWERGLIDE/Aircraft Flight Tuning", fileName = "AircraftFlightTuning")]
     public sealed class AircraftFlightTuning : ScriptableObject
     {
+        [Header("Body (기종별)")]
+        [Tooltip("Rigidbody 질량(kg). 힘은 질량 무관 가속도로 적용하므로(D-008) 충돌 반응·다른 강체와의 상호작용에만 영향. " +
+                 "'묵직함'은 angularResponse·회전 속도·추력·항력으로 표현한다(D-035).")]
+        [Min(1f)] public float mass = 900f;
+        [Tooltip("관성 텐서 배율(x=피치, y=요, z=롤). 1 = Unity 자동 계산. 토크도 가속도 모드라 조작감보다 충돌 후 회전에 영향.")]
+        public Vector3 inertiaTensorScale = Vector3.one;
+
         [Header("Speed (m/s) — 30 m/s ≈ 108 km/h")]
         [Tooltip("이 속도 미만에서 양력이 줄고 기수가 처진다(실속 표현).")]
         [Min(1f)] public float minFlightSpeed = 22f;
@@ -65,6 +72,8 @@ namespace TowerGlide.Flight
         [Range(0.1f, 1f)] public float highSpeedAuthority = 0.65f;
 
         [Header("Boost")]
+        [Tooltip("false면 부스트 버튼이 무시된다(예: 여객기).")]
+        public bool boostEnabled = true;
         [Min(0.1f)] public float boostCapacitySeconds = 3f;
         [Min(0.1f)] public float boostFullRechargeSeconds = 6f;
         [Min(0f)] public float boostRechargeDelaySeconds = 1f;
@@ -76,6 +85,18 @@ namespace TowerGlide.Flight
             FullRechargeSeconds = boostFullRechargeSeconds,
             RechargeDelaySeconds = boostRechargeDelaySeconds,
             MinRatioToRestart = boostMinRatioToRestart,
+        };
+
+        /// <summary>격납고 성능 막대 계산용 수치(Core).</summary>
+        public Core.Aircraft.FlightProfileNumbers ToProfileNumbers(float wingspan) => new Core.Aircraft.FlightProfileNumbers
+        {
+            MaxSpeed = maxSpeed,
+            MaxThrust = maxThrustAcceleration,
+            MaxRollRate = maxRollRate,
+            MaxPitchRate = maxPitchRate,
+            AngularResponse = angularResponse,
+            Wingspan = wingspan,
+            AirBrakeMultiplier = airBrakeDragMultiplier,
         };
 
         private void OnValidate()

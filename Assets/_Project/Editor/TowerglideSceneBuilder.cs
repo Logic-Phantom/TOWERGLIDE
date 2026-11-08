@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using TowerGlide.Cameras;
 using TowerGlide.Core.World;
+using TowerGlide.Core.World.Streaming;
 using TowerGlide.Flight;
 using TowerGlide.Gameplay;
 using TowerGlide.Input;
@@ -29,6 +30,9 @@ namespace TowerGlide.EditorTools
     {
         private const string CityMeshesPath = Root + "/Art/Buildings/CityMeshes.asset";
         private const string EdgeGlowPath = Root + "/Art/Textures/T_EdgeGlow.png";
+        private const string ChunkScenesDir = ScenesDir + "/Chunks";
+        private const string SkylineMeshesPath = Root + "/Art/Buildings/SkylineMeshes.asset";
+        public const string ChunkCatalogPath = SettingsDir + "/World/WorldChunkCatalog.asset";
 
         [MenuItem("TOWERGLIDE/2. 씬 생성 (MainMenu + CityFlight)", priority = 2)]
         public static void BuildAll()
@@ -37,17 +41,20 @@ namespace TowerGlide.EditorTools
             TowerglideProjectSetup.EnsureFolders();
             AircraftFlightTuning tuning = TowerglideProjectSetup.EnsureTuningAsset();
             TowerglideMaterials m = TowerglideMaterials.CreateAll();
-            TowerglidePrefabFactory.Set prefabs = TowerglidePrefabFactory.CreateAll(m, tuning);
+            TowerglidePrefabFactory.Set prefabs = TowerglidePrefabFactory.CreateAll(m);
+            TowerglideAircraftFactory.Result aircraftSet = TowerglideAircraftFactory.CreateAll(m, tuning);
             AssetDatabase.SaveAssets();
 
-            string flightPath = BuildCityFlight(m, prefabs);
+            string flightPath = BuildCityFlight(m, prefabs, aircraftSet, out List<string> chunkScenes);
             string menuPath = BuildMainMenu(m);
 
-            EditorBuildSettings.scenes = new[]
+            var scenes = new List<EditorBuildSettingsScene>
             {
                 new EditorBuildSettingsScene(menuPath, true),
                 new EditorBuildSettingsScene(flightPath, true),
             };
+            foreach (string c in chunkScenes) scenes.Add(new EditorBuildSettingsScene(c, true)); // Additive 로드 대상(애드온 명세 5.3)
+            EditorBuildSettings.scenes = scenes.ToArray();
             AssetDatabase.SaveAssets();
             EditorSceneManager.OpenScene(flightPath);
             TowerglideCourseValidator.ValidateOpenScene(showDialog: false);
@@ -60,7 +67,8 @@ namespace TowerGlide.EditorTools
         // CityFlight
         // =====================================================================
 
-        private static string BuildCityFlight(TowerglideMaterials m, TowerglidePrefabFactory.Set prefabs)
+        private static string BuildCityFlight(TowerglideMaterials m, TowerglidePrefabFactory.Set prefabs,
+            TowerglideAircraftFactory.Result aircraftSet, out List<string> chunkScenePaths)
         {
             Scene scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             SetupEnvironment();
@@ -73,8 +81,8 @@ namespace TowerGlide.EditorTools
             GameObject ground = Solid(PrimitiveType.Plane, "Ground", world, Vector3.zero, new Vector3(200f, 1f, 200f), m.Ground);
             GameObjectUtility.SetStaticEditorFlags(ground, StaticEditorFlags.BatchingStatic);
 
-            BuildCity(world, m, lots);
-            BuildObstacles(world, prefabs, lots, course, layoutSettings);
+            Transform cityRoot = BuildCity(world, m, lots);
+            Transform obstaclesRoot = BuildObstacles(world, prefabs, lots, course, layoutSettings);
             CheckpointCourse courseComponent = BuildCourse(world, prefabs, course);
 
             var boundaryGo = new GameObject("FlightBoundary");
@@ -86,7 +94,8 @@ namespace TowerGlide.EditorTools
             var spawn = new GameObject("SpawnPoint").transform;
             spawn.SetPositionAndRotation(spawnPos, Quaternion.LookRotation(V(course.Gates[0].Position) - spawnPos));
 
-            GameObject aircraftGo = TowerglidePrefabFactory.Place(prefabs.Aircraft, null, spawn.position, spawn.rotation, "Aircraft");
+            // 씬에 놓이는 기본 기체(placeholder). 실행 시 AircraftSpawnService가 격납고 선택 기체로 바꾼다.
+            GameObject aircraftGo = TowerglidePrefabFactory.Place(aircraftSet.ScoutPrefab, null, spawn.position, spawn.rotation, "Aircraft");
             var aircraft = aircraftGo.GetComponent<AircraftFlightController>();
 
             // ---- Camera ----
@@ -130,9 +139,137 @@ namespace TowerGlide.EditorTools
             SetRef(session, "hud", hud);
             SetRef(session, "feedbackFx", fx);
 
+            // ---- 기체 선택 스폰(애드온 명세 14) ----
+            AircraftSpawnService spawnService = systems.AddComponent<AircraftSpawnService>();
+            SetRef(spawnService, "placeholderAircraft", aircraft);
+            SetRef(spawnService, "spawnPoint", spawn);
+            SetRef(spawnService, "router", router);
+            SetRef(spawnService, "chaseCamera", chase);
+            SetRef(spawnService, "session", session);
+
+            // ---- 청크 스트리밍(OW1): 도시·장애물 → 250m 청크 씬, 비행 씬에는 지면·코스·원거리 실루엣만 상주 ----
+            WorldChunkGrid grid = SeoulWorldDefinition.StreamingPoc().Grid;
+            var streamingGo = new GameObject("WorldStreaming");
+            streamingGo.transform.SetParent(systems.transform, false);
+            WorldChunkLoader loader = streamingGo.AddComponent<WorldChunkLoader>();
+            WorldStreamingManager streamingManager = streamingGo.AddComponent<WorldStreamingManager>();
+            SkylineImpostorController skyline = streamingGo.AddComponent<SkylineImpostorController>();
+            WorldChunkCatalog catalog = SplitIntoChunks(scene, grid, cityRoot, obstaclesRoot, out chunkScenePaths,
+                out SkylineImpostorController.ChunkImpostor[] impostors);
+            SetRef(loader, "catalog", catalog);
+            SetRef(streamingManager, "loader", loader);
+            SetRef(streamingManager, "session", session);
+            skyline.Configure(loader, impostors);
+            EditorUtility.SetDirty(skyline);
+            SetRef(session, "streaming", streamingManager);
+            SetRef(hud, "streaming", streamingManager);
+
             string path = $"{ScenesDir}/CityFlight.unity";
             EditorSceneManager.SaveScene(scene, path);
             return path;
+        }
+
+        /// <summary>
+        /// 건물·장애물을 위치 기준 청크로 나눠 각각의 씬(Scenes/Chunks/Chunk_키.unity)으로 저장하고,
+        /// 청크마다 건물 외곽 상자를 합친 원거리 실루엣(충돌 없음)을 비행 씬에 남긴다(애드온 명세 5.1·5.4).
+        /// 격자 밖 오브젝트는 가장 가까운 가장자리 청크에 넣는다(누락 방지).
+        /// </summary>
+        private static WorldChunkCatalog SplitIntoChunks(Scene mainScene, WorldChunkGrid grid,
+            Transform cityRoot, Transform obstaclesRoot, out List<string> scenePaths, out SkylineImpostorController.ChunkImpostor[] impostors)
+        {
+            AssetDatabase.DeleteAsset(ChunkScenesDir);
+            EnsureFolder(ChunkScenesDir);
+            EnsureFolder(SettingsDir + "/World");
+            AssetDatabase.DeleteAsset(SkylineMeshesPath);
+            var skylineContainer = new Mesh { name = "SkylineMeshes" };
+            AssetDatabase.CreateAsset(skylineContainer, SkylineMeshesPath);
+            Material skylineMat = GetOrCreateLit("M_Skyline", new Color(0.5f, 0.56f, 0.64f), 0.3f);
+
+            var buckets = new Dictionary<WorldChunkId, List<Transform>>();
+            void Add(Transform root)
+            {
+                var items = new List<Transform>();
+                foreach (Transform t in root) items.Add(t);
+                foreach (Transform t in items)
+                {
+                    WorldChunkId id = grid.IdAt(t.position.x, t.position.z);
+                    id = new WorldChunkId(Mathf.Clamp(id.X, grid.MinX, grid.MaxX), Mathf.Clamp(id.Z, grid.MinZ, grid.MaxZ));
+                    if (!buckets.TryGetValue(id, out List<Transform> list)) buckets[id] = list = new List<Transform>();
+                    list.Add(t);
+                }
+            }
+            Add(cityRoot);
+            Add(obstaclesRoot);
+
+            var skylineRoot = new GameObject("Skyline").transform;
+            var entries = new List<WorldChunkCatalog.Entry>();
+            var impostorList = new List<SkylineImpostorController.ChunkImpostor>();
+            scenePaths = new List<string>();
+
+            foreach (WorldChunkId id in grid.All())
+            {
+                if (!buckets.TryGetValue(id, out List<Transform> items) || items.Count == 0) continue;
+
+                // 원거리 실루엣: 건물 렌더러 범위를 상자로 합침
+                var combine = new List<CombineInstance>();
+                int buildings = 0;
+                foreach (Transform t in items)
+                {
+                    ObstacleMarker marker = t.GetComponent<ObstacleMarker>();
+                    if (marker == null || marker.Type != ObstacleType.Building) continue;
+                    Renderer[] rs = t.GetComponentsInChildren<Renderer>();
+                    if (rs.Length == 0) continue;
+                    Bounds b = rs[0].bounds;
+                    foreach (Renderer r in rs) b.Encapsulate(r.bounds);
+                    combine.Add(new CombineInstance
+                    {
+                        mesh = ProceduralMeshes.CreateMetricBox(b.size),
+                        transform = Matrix4x4.Translate(new Vector3(b.center.x, b.min.y, b.center.z)),
+                    });
+                    buildings++;
+                }
+                if (combine.Count > 0)
+                {
+                    var mesh = new Mesh { name = $"Skyline_{id.Key}", indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+                    mesh.CombineMeshes(combine.ToArray(), true, true);
+                    foreach (CombineInstance ci in combine) Object.DestroyImmediate(ci.mesh);
+                    AssetDatabase.AddObjectToAsset(mesh, skylineContainer);
+                    var imp = new GameObject($"Skyline_{id.Key}");
+                    imp.transform.SetParent(skylineRoot, false);
+                    imp.AddComponent<MeshFilter>().sharedMesh = mesh;
+                    imp.AddComponent<MeshRenderer>().sharedMaterial = skylineMat;
+                    GameObjectUtility.SetStaticEditorFlags(imp, StaticEditorFlags.BatchingStatic);
+                    impostorList.Add(new SkylineImpostorController.ChunkImpostor { x = id.X, z = id.Z, root = imp });
+                }
+
+                // 상세 청크 씬
+                var chunkRoot = new GameObject($"Chunk_{id.Key}");
+                foreach (Transform t in items) t.SetParent(chunkRoot.transform, true);
+                Scene chunkScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+                SceneManager.MoveGameObjectToScene(chunkRoot, chunkScene);
+                string path = $"{ChunkScenesDir}/Chunk_{id.Key}.unity";
+                EditorSceneManager.SaveScene(chunkScene, path);
+                EditorSceneManager.CloseScene(chunkScene, true);
+                SceneManager.SetActiveScene(mainScene);
+
+                scenePaths.Add(path);
+                entries.Add(new WorldChunkCatalog.Entry { x = id.X, z = id.Z, scenePath = path, buildingCount = buildings });
+            }
+            AssetDatabase.SaveAssets();
+
+            var catalog = AssetDatabase.LoadAssetAtPath<WorldChunkCatalog>(ChunkCatalogPath);
+            if (catalog == null)
+            {
+                catalog = ScriptableObject.CreateInstance<WorldChunkCatalog>();
+                AssetDatabase.CreateAsset(catalog, ChunkCatalogPath);
+            }
+            catalog.Configure(grid.ChunkSize, grid.MinX, grid.MinZ, grid.MaxX, grid.MaxZ, entries.ToArray());
+            EditorUtility.SetDirty(catalog);
+            AssetDatabase.SaveAssets();
+
+            impostors = impostorList.ToArray();
+            Debug.Log($"[TOWERGLIDE] 청크 {entries.Count}개 씬 생성(크기 {grid.ChunkSize}m), 원거리 실루엣 {impostors.Length}개");
+            return catalog;
         }
 
         private static void SetupEnvironment()
@@ -159,13 +296,14 @@ namespace TowerGlide.EditorTools
         // ---------------------------------------------------------------------
         // 도시: Core 레이아웃 → 아키타입 모듈. 절차 메시는 하나의 에셋 파일에 모아 저장(씬 비대화·누락 방지).
         // ---------------------------------------------------------------------
-        private static void BuildCity(Transform world, TowerglideMaterials m, List<LotPlacement> lots)
+        private static Transform BuildCity(Transform world, TowerglideMaterials m, List<LotPlacement> lots)
         {
             var city = new GameObject("City").transform;
             city.SetParent(world, false);
             foreach (LotPlacement lot in lots)
                 if (lot.Kind == LotKind.Building) TowerglideBuildingFactory.Build(lot, m, city);
             SaveProceduralMeshes(city);
+            return city;
         }
 
         private static void SaveProceduralMeshes(Transform root)
@@ -190,7 +328,7 @@ namespace TowerGlide.EditorTools
         // ---------------------------------------------------------------------
         // 장애물(프리팹 인스턴스). 위치는 코스 구간 기준 — docs/GAME_DESIGN.md 표와 같게 유지.
         // ---------------------------------------------------------------------
-        private static void BuildObstacles(Transform world, TowerglidePrefabFactory.Set p, List<LotPlacement> lots,
+        private static Transform BuildObstacles(Transform world, TowerglidePrefabFactory.Set p, List<LotPlacement> lots,
             CourseDefinition course, CityLayoutSettings settings)
         {
             var root = new GameObject("Obstacles").transform;
@@ -237,6 +375,7 @@ namespace TowerGlide.EditorTools
                 if (CityLayoutGenerator.HeightCap(course, lot.X, lot.Z, 25f, settings) < float.MaxValue) continue;
                 TowerglidePrefabFactory.Place(p.CargoBalloon, root, new Vector3(lot.X, 60f, lot.Z), Quaternion.identity, $"CargoBalloon_{balloons++}");
             }
+            return root;
         }
 
         // ---------------------------------------------------------------------
@@ -470,6 +609,11 @@ namespace TowerGlide.EditorTools
             SetRef(hud, "endFreeFlightButton", endFree.gameObject);
             SetRef(hud, "joystick", stick);
             SetRef(hud, "worldCamera", cam);
+            Text compass = Label("Compass", safe, tc, new Vector2(0f, -140f), new Vector2(260f, 44f), "N 000°", 30);
+            Text streamingDebug = Label("StreamingDebug", safe, new Vector2(0f, 0f), new Vector2(560f, 30f), new Vector2(1100f, 36f), "", 20, TextAnchor.MiddleLeft, FontStyle.Normal);
+            streamingDebug.color = new Color(0.8f, 1f, 0.8f, 0.85f);
+            SetRef(hud, "compassText", compass);
+            SetRef(hud, "streamingDebugText", streamingDebug);
             return hud;
         }
 
@@ -517,17 +661,28 @@ namespace TowerGlide.EditorTools
             var controllerGo = new GameObject("MainMenu");
             MainMenuController menu = controllerGo.AddComponent<MainMenuController>();
 
+            RectTransform group = Rect("MenuGroup", safe, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             Vector2 left = new Vector2(0f, 0.5f);
-            Label("Logo", safe, left, new Vector2(420f, 330f), new Vector2(760f, 140f), "TOWERGLIDE", 110, TextAnchor.MiddleLeft);
-            Label("Tagline", safe, left, new Vector2(420f, 245f), new Vector2(760f, 50f), "빌딩 사이, 한계 없이.", 36, TextAnchor.MiddleLeft, FontStyle.Normal);
-            MenuButton("SkylineRun", safe, left, new Vector2(300f, 110f), new Vector2(480f, 110f), "SKYLINE RUN", menu.StartSkylineRun);
-            MenuButton("FreeFlight", safe, left, new Vector2(300f, -20f), new Vector2(480f, 110f), "FREE FLIGHT", menu.StartFreeFlight);
-            MenuButton("Hangar", safe, left, new Vector2(180f, -150f), new Vector2(230f, 90f), "HANGAR", menu.OpenHangar);
-            MenuButton("Settings", safe, left, new Vector2(420f, -150f), new Vector2(230f, 90f), "SETTINGS", menu.OpenSettings);
-            Text records = Label("Records", safe, new Vector2(0f, 0f), new Vector2(560f, 90f), new Vector2(1000f, 100f), "", 28, TextAnchor.MiddleLeft, FontStyle.Normal);
+            Label("Logo", group, left, new Vector2(420f, 330f), new Vector2(760f, 140f), "TOWERGLIDE", 110, TextAnchor.MiddleLeft);
+            Label("Tagline", group, left, new Vector2(420f, 245f), new Vector2(760f, 50f), "빌딩 사이, 한계 없이.", 36, TextAnchor.MiddleLeft, FontStyle.Normal);
+            MenuButton("SkylineRun", group, left, new Vector2(300f, 110f), new Vector2(480f, 110f), "SKYLINE RUN", menu.StartSkylineRun);
+            MenuButton("FreeFlight", group, left, new Vector2(300f, -20f), new Vector2(480f, 110f), "FREE FLIGHT", menu.StartFreeFlight);
+            MenuButton("Hangar", group, left, new Vector2(180f, -150f), new Vector2(230f, 90f), "HANGAR", menu.OpenHangar);
+            MenuButton("Settings", group, left, new Vector2(420f, -150f), new Vector2(230f, 90f), "SETTINGS", menu.OpenSettings);
+            Text records = Label("Records", group, new Vector2(0f, 0f), new Vector2(560f, 90f), new Vector2(1000f, 100f), "", 28, TextAnchor.MiddleLeft, FontStyle.Normal);
             Text notice = Label("Notice", safe, left, new Vector2(300f, -250f), new Vector2(600f, 50f), "", 28, TextAnchor.MiddleCenter, FontStyle.Normal);
             SetRef(menu, "recordsText", records);
             SetRef(menu, "noticeText", notice);
+            Text aircraftLabel = Label("Aircraft", group, left, new Vector2(420f, 190f), new Vector2(760f, 40f), "", 28, TextAnchor.MiddleLeft, FontStyle.Normal);
+            Text credits = Label("Credits", safe, new Vector2(1f, 0f), new Vector2(-330f, 30f), new Vector2(620f, 30f), "", 18, TextAnchor.MiddleRight, FontStyle.Normal);
+            SetRef(menu, "aircraftText", aircraftLabel);
+            SetRef(menu, "creditsText", credits);
+
+            // 격납고(애드온 명세 14.5): 3D 미리보기 받침대는 메뉴 카메라 정면
+            var pedestal = new GameObject("HangarPedestal").transform;
+            pedestal.position = camGo.transform.position + camGo.transform.forward * 26f + Vector3.down * 2f;
+            HangarController hangar = BuildHangarUi(canvas, menu, group.gameObject, pedestal);
+            SetRef(menu, "hangar", hangar);
 
             // 메뉴 배경 건물 메시도 에셋으로 저장
             SaveMenuMeshes(bg);
@@ -535,6 +690,74 @@ namespace TowerGlide.EditorTools
             string path = $"{ScenesDir}/MainMenu.unity";
             EditorSceneManager.SaveScene(scene, path);
             return path;
+        }
+
+        private static HangarController BuildHangarUi(Canvas canvas, MainMenuController menu, GameObject menuGroup, Transform pedestal)
+        {
+            RectTransform panel = Rect("HangarPanel", canvas.transform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            HangarController hangar = panel.gameObject.AddComponent<HangarController>();
+
+            // 가운데: 드래그로 돌리는 미리보기 영역(투명) — 3D 기체는 메뉴 카메라 앞 받침대에 표시
+            Image dragArea = Panel("PreviewDrag", panel, new Vector2(0.28f, 0.15f), new Vector2(0.62f, 0.95f), Vector2.zero, Vector2.zero, new Color(1f, 1f, 1f, 0f));
+            AircraftPreviewController preview = dragArea.gameObject.AddComponent<AircraftPreviewController>();
+            SetRef(preview, "pedestal", pedestal);
+
+            // 왼쪽: 기체 카드 목록(카탈로그에서 실행 시 생성)
+            Image left = Panel("CardColumn", panel, new Vector2(0f, 0f), new Vector2(0.27f, 1f), Vector2.zero, Vector2.zero, new Color(0.02f, 0.04f, 0.08f, 0.8f));
+            Label("Title", left.transform, new Vector2(0.5f, 1f), new Vector2(0f, -60f), new Vector2(460f, 60f), "HANGAR", 48);
+            RectTransform list = Rect("Cards", left.transform, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, -60f), new Vector2(-40f, -160f));
+            VerticalLayoutGroup layout = list.gameObject.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = 12f;
+            layout.childForceExpandHeight = false;
+            layout.childControlHeight = false;
+            layout.childAlignment = TextAnchor.UpperCenter;
+            Image cardBg = Panel("CardTemplate", list, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(440f, 96f), new Color(0.08f, 0.12f, 0.2f, 0.85f), RoundedSprite);
+            Button cardTemplate = cardBg.gameObject.AddComponent<Button>();
+            Label("Name", cardBg.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, 16f), new Vector2(420f, 44f), "", 32);
+            Label("Status", cardBg.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, -24f), new Vector2(420f, 32f), "", 22, TextAnchor.MiddleCenter, FontStyle.Normal);
+
+            // 오른쪽: 상세·상대 성능 막대·버튼
+            Image right = Panel("DetailColumn", panel, new Vector2(0.63f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero, new Color(0.02f, 0.04f, 0.08f, 0.8f));
+            Vector2 top = new Vector2(0.5f, 1f);
+            Text nameText = Label("Name", right.transform, top, new Vector2(0f, -60f), new Vector2(640f, 56f), "", 38);
+            Text detail = Label("Detail", right.transform, top, new Vector2(0f, -150f), new Vector2(640f, 110f), "", 24, TextAnchor.UpperLeft, FontStyle.Normal);
+            string[] statNames = { "속도", "가속", "기동성", "안정성", "크기" };
+            var bars = new Image[statNames.Length];
+            for (int i = 0; i < statNames.Length; i++)
+            {
+                float y = -250f - i * 46f;
+                Label($"StatLabel{i}", right.transform, top, new Vector2(-230f, y), new Vector2(160f, 40f), statNames[i], 26, TextAnchor.MiddleLeft, FontStyle.Normal);
+                Image bg = Panel($"StatBg{i}", right.transform, top, top, new Vector2(70f, y), new Vector2(400f, 18f), new Color(1f, 1f, 1f, 0.15f));
+                Image fill = Panel("Fill", bg.transform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, new Color(1f, 0.6f, 0.15f, 0.95f), RoundedSprite);
+                fill.type = Image.Type.Filled;
+                fill.fillMethod = Image.FillMethod.Horizontal;
+                bars[i] = fill;
+            }
+            Text unlock = Label("Unlock", right.transform, top, new Vector2(0f, -500f), new Vector2(640f, 44f), "", 20, TextAnchor.MiddleCenter, FontStyle.Normal);
+            Text notice = Label("Notice", right.transform, top, new Vector2(0f, -545f), new Vector2(640f, 44f), "", 22, TextAnchor.MiddleCenter, FontStyle.Normal);
+            notice.color = new Color(1f, 0.75f, 0.4f);
+            Vector2 bottom = new Vector2(0.5f, 0f);
+            Button select = MenuButton("Select", right.transform, bottom, new Vector2(-170f, 250f), new Vector2(300f, 90f), "SELECT", hangar.SelectViewing);
+            Button flyFree = MenuButton("FlyFree", right.transform, bottom, new Vector2(170f, 250f), new Vector2(300f, 90f), "FREE FLIGHT", hangar.FlyFree);
+            Button flySkyline = MenuButton("FlySkyline", right.transform, bottom, new Vector2(170f, 150f), new Vector2(300f, 90f), "SKYLINE RUN", hangar.FlySkyline);
+            MenuButton("Back", right.transform, bottom, new Vector2(-170f, 150f), new Vector2(300f, 90f), "BACK", hangar.Hide);
+
+            SetRef(hangar, "panel", panel.gameObject);
+            SetRef(hangar, "menuGroup", menuGroup);
+            SetRef(hangar, "cardContainer", list);
+            SetRef(hangar, "cardTemplate", cardTemplate);
+            SetRef(hangar, "nameText", nameText);
+            SetRef(hangar, "detailText", detail);
+            SetRef(hangar, "unlockText", unlock);
+            SetRefs(hangar, "statBars", bars);
+            SetRef(hangar, "selectButton", select);
+            SetRef(hangar, "selectButtonLabel", select.GetComponentInChildren<Text>());
+            SetRef(hangar, "flyFreeButton", flyFree);
+            SetRef(hangar, "flySkylineButton", flySkyline);
+            SetRef(hangar, "noticeText", notice);
+            SetRef(hangar, "preview", preview);
+            SetRef(hangar, "menu", menu);
+            return hangar;
         }
 
         private static void SaveMenuMeshes(Transform root)
