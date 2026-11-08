@@ -28,6 +28,8 @@ namespace TowerGlide.Core.Save
         public bool hapticsEnabled = true;
         public bool tutorialSeen;
         public int targetFrameRate = 60;      // 30 | 60
+        /// <summary>첫 실행 기기 사양 기반 품질 자동 선택을 했는지(QualityAutoSelector). 없던 필드 → 기존 사용자는 false로 읽혀 한 번 적용.</summary>
+        public bool qualityAutoApplied;
 
         public SettingsData Sanitized()
         {
@@ -45,6 +47,7 @@ namespace TowerGlide.Core.Save
                 hapticsEnabled = hapticsEnabled,
                 tutorialSeen = tutorialSeen,
                 targetFrameRate = targetFrameRate <= 30 ? 30 : 60,
+                qualityAutoApplied = qualityAutoApplied,
             };
         }
 

@@ -31,11 +31,11 @@ namespace TowerGlide.Core.Save
 
         public static string OnOff(bool v) => v ? "켜짐" : "꺼짐";
 
-        /// <summary>설정 초기화: 기본값으로 되돌리되 튜토리얼 완료 여부는 유지(초기화할 때마다 튜토리얼이 다시 뜨지 않게).</summary>
-        public static SettingsData ResetKeepingTutorial(SettingsData current)
-        {
-            var d = new SettingsData { tutorialSeen = current != null && current.tutorialSeen };
-            return d;
-        }
+        /// <summary>
+        /// 설정 초기화: 기본값으로 되돌리되 튜토리얼 완료 여부는 유지(초기화할 때마다 튜토리얼이 다시 뜨지 않게).
+        /// qualityAutoApplied = false → 그래픽·프레임은 "이 기기에 맞는 기본값"으로 다시 계산된다(저사양 기기가 Balanced로 돌아가지 않게).
+        /// </summary>
+        public static SettingsData ResetKeepingTutorial(SettingsData current) =>
+            new SettingsData { tutorialSeen = current != null && current.tutorialSeen, qualityAutoApplied = false };
     }
 }
