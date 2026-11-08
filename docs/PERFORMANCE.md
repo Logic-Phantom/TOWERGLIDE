@@ -22,6 +22,9 @@
 - [ ] Profiler(CPU/GPU/Memory/GC Alloc), Android GPU Inspector(선택)
 - [ ] 5분 이상 비행 발열·메모리
 
+## 측정 방법
+성능 측정용 APK(`TOWERGLIDE ▸ Build ▸ Android APK (성능 측정용)`)의 측정 오버레이 값을 "복사"해 아래 표에 붙인다. 절차: `docs/DEVICE_TEST_GUIDE.md` 3·4절.
+
 ## 측정 기록
 | 날짜 | 기기 | 해상도 | 프리셋 | 빌드 | 평균 FPS | 1% Low | 메모리 | 비고 |
 |---|---|---|---|---|---|---|---|---|

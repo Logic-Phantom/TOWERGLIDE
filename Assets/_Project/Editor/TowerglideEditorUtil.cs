@@ -20,6 +20,8 @@ namespace TowerGlide.EditorTools
 
         public const string CompanyName = "Logic Phantom";
         public const string ProductName = "TOWERGLIDE";
+        /// <summary>한국어 기기의 홈 화면 이름(D-003) — Android values-ko / iOS ko.lproj 후처리에서 사용.</summary>
+        public const string KoreanAppName = "타워글라이드";
         /// <summary>스토어 등록 후에는 바꿀 수 없다. 첫 업로드 전 확정(D-004).</summary>
         public const string ApplicationId = "com.logicphantom.towerglide";
 

@@ -396,6 +396,7 @@ namespace TowerGlide.Gameplay
 
         public void TogglePause()
         {
+            if (SettingsPanelController.CloseIfOpen()) return; // 설정 화면이 열려 있으면 그것부터 닫기(뒤로가기)
             if (_state.Current == GameState.Flying) Pause();
             else if (_state.Current == GameState.Paused) Resume();
         }

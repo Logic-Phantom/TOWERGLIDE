@@ -4,6 +4,7 @@ using TowerGlide.Core.Gameplay;
 using TowerGlide.Core.Save;
 using TowerGlide.Flight;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace TowerGlide.UI
@@ -27,6 +28,29 @@ namespace TowerGlide.UI
             if (noticeText != null) noticeText.text = string.Empty;
             if (creditsText != null) creditsText.text = string.Empty; // OW2에서 OSM 등 사용 시 "© OpenStreetMap contributors" 표시
             Refresh();
+        }
+
+        private float _quitArmedUntil = -1f;
+
+        /// <summary>Android 뒤로가기(= Input System Escape): 열린 화면 닫기 → 두 번 누르면 종료.</summary>
+        private void Update()
+        {
+            Keyboard kb = Keyboard.current;
+            if (kb == null || !kb.escapeKey.wasPressedThisFrame) return;
+            if (SettingsPanelController.CloseIfOpen()) return;
+            if (hangar != null && hangar.IsOpen)
+            {
+                hangar.Hide();
+                return;
+            }
+            if (Time.unscaledTime < _quitArmedUntil)
+            {
+                GameApp.Instance?.SaveNow();
+                Application.Quit();
+                return;
+            }
+            _quitArmedUntil = Time.unscaledTime + 2f;
+            ShowNotice("뒤로 버튼을 한 번 더 누르면 종료합니다.");
         }
 
         public void Refresh()

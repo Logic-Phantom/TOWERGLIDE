@@ -38,6 +38,31 @@ namespace TowerGlide.EditorTools
         [MenuItem("TOWERGLIDE/Build/Android APK (개발·실기기 테스트)", priority = 111)]
         public static void BuildAndroidDevApk() => BuildAndroid(release: false);
 
+        /// <summary>
+        /// 성능 측정용 APK: 릴리스와 같은 최적화(Development 아님) + 측정 오버레이(TG_PERF_HUD), 디버그 키 서명.
+        /// 명세 10.3 "Development Build와 Release Build를 구분해 측정" — 이 빌드의 수치를 PERFORMANCE 문서에 기록한다.
+        /// </summary>
+        [MenuItem("TOWERGLIDE/Build/Android APK (성능 측정용 — 릴리스 최적화 + 측정 오버레이)", priority = 112)]
+        public static void BuildAndroidPerfApk()
+        {
+            TowerglideProjectSetup.ApplyPlayerSettings();
+            if (!Check(Validate(BuildTarget.Android, release: false))) return;
+            var target = NamedBuildTarget.Android;
+            string previous = PlayerSettings.GetScriptingDefineSymbols(target);
+            try
+            {
+                PlayerSettings.SetScriptingDefineSymbols(target, string.IsNullOrEmpty(previous) ? "TG_PERF_HUD" : previous + ";TG_PERF_HUD");
+                EditorUserBuildSettings.buildAppBundle = false;
+                PlayerSettings.Android.useCustomKeystore = false;
+                TowerglideEditorUtil.VersionInfo v = TowerglideEditorUtil.ReadVersion();
+                Run(BuildTarget.Android, Path.Combine(OutputRoot, "Android", $"TOWERGLIDE-{v.version}-{v.build}-perf.apk"), BuildOptions.None);
+            }
+            finally
+            {
+                PlayerSettings.SetScriptingDefineSymbols(target, previous); // 측정 오버레이 정의를 프로젝트에 남기지 않음
+            }
+        }
+
         [MenuItem("TOWERGLIDE/Build/iOS Xcode 프로젝트 (macOS에서 Archive)", priority = 120)]
         public static void BuildIosXcode()
         {

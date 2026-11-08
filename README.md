@@ -12,15 +12,15 @@
 - 서울 오픈월드 확장 준비 — 청크 스트리밍 구조(현재 도시는 절차적 테스트 데이터, 실제 서울 데이터 없음)
 - 조작: 왼손 플로팅 조이스틱(기울이면 선회) + 오른손 BOOST/BRAKE
 
-## 🧭 지금 상태 한눈에 (2026-11-08 Phase 3 + 애드온 OW0·OW1·AC1 코드 완료 — 다음 작업은 여기부터)
+## 🧭 지금 상태 한눈에 (2026-11-08 실기기 테스트 직전까지 준비 완료 — 다음 작업은 여기부터)
 
-**한 줄 요약**: Phase 0~3 코드 완료(Phase 3 = 설정 화면·합성 사운드·조작 튜토리얼·라이선스 고지) + 서울 오픈월드·기체 선택 애드온의 첫 단계 — **좌표계(EPSG:5186)·250m 청크 스트리밍·원거리 실루엣**, **기체 3종(Scout P-1 / Viper F-9 / Cityliner 180)·격납고·선택 저장**. 실제 서울 지도 데이터는 라이선스 확인 전이라 **0건**. **개발 PC에 Unity가 없어 아직 한 번도 열거나 실행하지 않았다** — 다음 단계는 Unity 설치 → 컴파일 오류 수정 → 조작감 튜닝.
+**한 줄 요약**: Unity 없이 할 수 있는 실기기 테스트 전 준비는 모두 끝났다(측정 오버레이·로그·품질 자동 선택·한글 앱 이름·권한 점검·임시 아이콘·테스트 가이드). Phase 0~3 코드 완료(Phase 3 = 설정 화면·합성 사운드·조작 튜토리얼·라이선스 고지) + 서울 오픈월드·기체 선택 애드온의 첫 단계 — **좌표계(EPSG:5186)·250m 청크 스트리밍·원거리 실루엣**, **기체 3종(Scout P-1 / Viper F-9 / Cityliner 180)·격납고·선택 저장**. 실제 서울 지도 데이터는 라이선스 확인 전이라 **0건**. **개발 PC에 Unity가 없어 아직 한 번도 열거나 실행하지 않았다** — 다음 단계는 Unity 설치 → 컴파일 오류 수정 → 조작감 튜닝.
 
 ### 검증 상태
 | 범위 | 상태 |
 |---|---|
 | Unity로 프로젝트 열기·컴파일 | ⬜ 미실행 (Unity 미설치) |
-| EditMode 테스트(Core, 111케이스) | ✅ GitHub Actions `core-tests`(.NET 8, C# 9)에서 전체 통과 ([최근 실행](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42467226975)) · ⬜ Unity Test Runner에서는 미실행 |
+| EditMode 테스트(Core, 119케이스) | ✅ GitHub Actions `core-tests`(.NET 8, C# 9)에서 전체 통과 ([최근 실행](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42467820554)) · ⬜ Unity Test Runner에서는 미실행 |
 | PlayMode 테스트(24케이스: 비행·씬 흐름·기체 비교·오픈월드·저장 파일·사운드·튜토리얼) | ⬜ 미실행 |
 | 설정·사운드·튜토리얼 실제 화면·소리 | ⬜ 미실행 — 가로 화면 겹침·음량 균형·터치 크기 확인 필요 |
 | 청크 스트리밍 실제 동작·메모리 | ⬜ 미실행 — `docs/SEOUL_WORLD_PERFORMANCE.md` 기록 양식만 |
@@ -41,11 +41,13 @@
 | GitHub Pages(처리방침) | ⬜ 미설정 — `docs/legal/privacy.html` 준비됨 |
 
 ## 다음 할 일 (순서대로)
+> **실기기 테스트 전체 절차·명령어·체크리스트: [docs/DEVICE_TEST_GUIDE.md](docs/DEVICE_TEST_GUIDE.md)** (Unity 설치 → 메뉴 실행 → 에디터 테스트 → 개발 APK 설치 → 14개 항목 → 기록)
+
 1. **Unity 설치**: Unity Hub → Unity **6.3 LTS** + Android Build Support(OpenJDK, SDK & NDK) + iOS Build Support.
 2. **프로젝트 열기**: Hub ▸ Add ▸ `C:\eclipse_AI\TOWERGLIDE` → 버전 경고가 나오면 설치한 6.3 LTS 선택 → 컴파일 오류가 있으면 Claude Code에 Console 로그를 주고 수정.
 3. **메뉴 실행**: `TOWERGLIDE ▸ 1. 프로젝트 설정 적용`(입력 방식 변경 시 재시작) → `TOWERGLIDE ▸ 2. 씬 생성` → `TOWERGLIDE ▸ 3. 코스 검증` → Test Runner에서 EditMode/PlayMode 실행.
 4. **Phase 1 조작감 튜닝**: `CityFlight` Play → 키보드와 Device Simulator로 비행 → `docs/FLIGHT_PHYSICS.md` 표대로 `AircraftFlightTuning` 조정 → 승인 기준 7개 체크.
-5. **Android 실기기**: `TOWERGLIDE ▸ Build ▸ Android APK` → `adb install -r` → 터치 조작·프레임 확인.
+5. **Android 실기기**: 개발 APK로 기능 테스트 → 성능 측정용 APK로 FPS·발열 측정(측정 오버레이 '복사' → 문서 표). 빌드마다 `Builds/Android/permissions-report.txt` 확인.
 6. **애드온 확인**: 격납고에서 3종 선택 → FREE FLIGHT 비행 차이, 여객기로 SKYLINE RUN이 막히는지, 청크가 로드/언로드되며 도시가 끊기지 않는지(HUD 왼쪽 아래 스트리밍 디버그), 제트 부스트로 도시를 가로질러도 앞 청크가 제때 나오는지 → `docs/SEOUL_WORLD_PERFORMANCE.md`.
 7. **Phase 3 확인**: 메인 메뉴·일시정지 ▸ SETTINGS(값 바꾸고 앱 재시작 후 유지되는지), 첫 비행 튜토리얼, 엔진음(기체별)·바람·링·충돌 소리 크기 균형, **한글이 Pretendard로 보이는지**(`TOWERGLIDE ▸ 2. 씬 생성`을 다시 실행해야 적용).
 8. **Phase 2 눈으로 확인**: 건물 형태·창문 정렬·LOD 전환, 장애물이 "보고 피할 수 있는지", 링 빛기둥·경계 화살표·근접 회피 플래시가 과하지 않은지.
@@ -101,7 +103,7 @@ build/version.json · tools/core-tests/ · .github/workflows/ · docs/ · brand/
 | [DECISIONS](docs/DECISIONS.md) | 결정 기록 D-001~ |
 | [PROMPT_REVIEW](docs/PROMPT_REVIEW.md) | 원본 명세 검토·보완 15항목 |
 | [GAME_DESIGN](docs/GAME_DESIGN.md) · [FLIGHT_PHYSICS](docs/FLIGHT_PHYSICS.md) · [TOUCH_CONTROLS](docs/TOUCH_CONTROLS.md) | 모드·코스·장애물·점수 / 물리 모델·튜닝 / 조작 |
-| [PERFORMANCE](docs/PERFORMANCE.md) · [TEST_PLAN](docs/TEST_PLAN.md) | 최적화·측정 / 테스트 매핑·결과 |
+| [DEVICE_TEST_GUIDE](docs/DEVICE_TEST_GUIDE.md) · [PERFORMANCE](docs/PERFORMANCE.md) · [TEST_PLAN](docs/TEST_PLAN.md) | 실기기 테스트 절차 / 최적화·측정 / 테스트 매핑·결과 |
 | [RELEASE_CHECKLIST](docs/RELEASE_CHECKLIST.md) · [APP_STORE_AND_COSTS](docs/APP_STORE_AND_COSTS.md) · [STORE_LISTING](docs/STORE_LISTING.md) | 두 스토어 출시 절차 / 비용 / 등록 문안 |
 | [PRIVACY](docs/PRIVACY.md) · [legal/privacy.html](docs/legal/privacy.html) · [BRAND_AND_TRADEMARKS](docs/BRAND_AND_TRADEMARKS.md) · [THIRD_PARTY_ASSETS](docs/THIRD_PARTY_ASSETS.md) | 개인정보 / 처리방침 / 상표 / 에셋 라이선스 |
 | [ROADMAP](docs/ROADMAP.md) · [SUPERPROMPT](docs/SUPERPROMPT.md) · [애드온 명세](docs/SUPERPROMPT_ADDON_SEOUL_AIRCRAFT.md) | 단계별 진행 / 원본 명세 / 서울·기체 추가 명세 |
@@ -109,6 +111,16 @@ build/version.json · tools/core-tests/ · .github/workflows/ · docs/ · brand/
 | [WORKLOG](WORKLOG.md) · [CLAUDE.md](CLAUDE.md) | 작업 일지 / 에이전트 작업 규칙 |
 
 ## 변경 내역 (Changelog)
+### 실기기 테스트 준비 — 2026-11-08
+- **측정 도구**(개발·성능 측정 빌드 전용): FPS·1% Low·최대 프레임·30fps 미만 비율·메모리·기기 정보·청크 상태 오버레이(세 손가락 탭, 값 복사), 기기 내 로그 파일(adb로 수집)
+- **성능 측정용 APK 메뉴**: 릴리스 최적화 + 측정 오버레이
+- **첫 실행 품질 자동 선택**(RAM·코어 기준, 저사양 30fps) + 단계별 청크 메모리 예산
+- **Android 뒤로가기**: 설정·격납고 닫기 → 두 번 눌러 종료, 비행 중 일시정지
+- **출시 설정 자동화**: 한국어 홈 화면 이름 "타워글라이드"(Android·iOS), iOS 암호화 미사용 값, 빌드마다 Android 권한 점검 보고서
+- **임시 앱 아이콘**(시안 → 1024/512/192 PNG) + 스플래시 배경
+- **[실기기 테스트 가이드](docs/DEVICE_TEST_GUIDE.md)**: 준비·빌드 3종·설치/로그 명령·14개 항목·문제 해결·기록 양식
+- 테스트: EditMode 111 → 119(CI 통과)
+
 ### 한글 폰트 — 2026-11-08
 - **Pretendard v1.3.9 Regular·Bold**(SIL OFL 1.1) 도입: 공식 저장소에서 받아 크기·형식·해시 확인, 한글 11,172자·UI 기호 지원 확인
 - 모든 UI 텍스트에 적용(굵게 = Bold 파일), 없는 글자는 OS 한글 폰트로 대체, 🔒 이모지 → "잠김"
@@ -156,3 +168,4 @@ build/version.json · tools/core-tests/ · .github/workflows/ · docs/ · brand/
 | 2026-11-08 | 애드온 OW0·OW1·AC0·AC1: 좌표계·청크 스트리밍·실루엣, 기체 3종·격납고·저장 v2, 데이터 라이선스 기록 | Core 94 테스트 CI 통과 / Unity·실기기 미검증 — 상세 [WORKLOG.md](WORKLOG.md) |
 | 2026-11-08 | Phase 3: 설정 화면·합성 사운드·튜토리얼·라이선스 고지 | Core 111 테스트 CI 통과 / Unity 미검증 — 상세 [WORKLOG.md](WORKLOG.md) |
 | 2026-11-08 | 한글 폰트 Pretendard 도입(OFL), 라이선스 전문 표시 | 파일 검증 완료 / Unity 화면 미확인 — 상세 [WORKLOG.md](WORKLOG.md) |
+| 2026-11-08 | 실기기 테스트 준비: 측정 오버레이·로그·품질 자동 선택·뒤로가기·한글 앱 이름·권한 점검·임시 아이콘·가이드 | Core 119 테스트 CI 통과 / Unity·실기기 미실행 — 상세 [WORKLOG.md](WORKLOG.md) |

@@ -27,6 +27,7 @@
 | 엔진음 모델(속도↑ 음높이↑, 터보팬 범위 좁음·부스트 무시, 범위) | `EngineSoundModelTests` |
 | 튜토리얼(조작 유지해야 진행, 누적, 부스트 없는 기체, 건너뛰기) | `TutorialSequenceTests` |
 | 설정 선택지(순환, 감도 0.1 단위, 초기화 시 튜토리얼 유지, 표시 문구) | `SettingsOptionsTests` |
+| 기기 사양 품질 자동 선택(1회 적용·사용자 우선·초기화 재계산), 프레임 통계(평균·1% Low·느린 프레임) | `QualityAutoSelectorTests`, `FrameStatsTests` |
 
 실행: Unity Test Runner(Window ▸ General ▸ Test Runner ▸ EditMode) 또는 Unity 없이 `dotnet test tools/core-tests`(GitHub Actions `core-tests`).
 
@@ -60,7 +61,7 @@
 - [ ] 일시정지 중 버튼·물리 정지, 재개 후 입력 정상
 - [ ] 결과 → 재도전/메뉴, 기록 저장 후 재실행 유지
 
-## 4. 실기기 (명세 11.3)
+## 4. 실기기 (명세 11.3) — 절차·명령어는 `docs/DEVICE_TEST_GUIDE.md`
 - [ ] 저/중/고급 Android 설치·실행, 가로 고정, 노치·시스템 UI 겹침
 - [ ] 터치 조작 편의·오입력, 손 떼면 즉시 해제
 - [ ] 5분 이상: 프레임·발열·메모리(`docs/PERFORMANCE.md`)
@@ -79,3 +80,4 @@
 | 2026-11-08 | PlayMode 18 · 코스 검증 · 스트리밍 스트레스 | — | **미실행**: Unity 미설치 |
 | 2026-11-08 | EditMode(Core) 111 | GitHub Actions | ✅ 전체 통과 ([run](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42467226975)) |
 | 2026-11-08 | PlayMode 24 | — | **미실행**: Unity 미설치 |
+| 2026-11-08 | EditMode(Core) 119 | GitHub Actions | ✅ 전체 통과 ([run](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42467820554)) |

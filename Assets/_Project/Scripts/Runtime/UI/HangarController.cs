@@ -65,6 +65,8 @@ namespace TowerGlide.UI
             View(sel.Selected);
         }
 
+        public bool IsOpen => panel != null && panel.activeSelf;
+
         public void Hide()
         {
             if (panel != null) panel.SetActive(false);

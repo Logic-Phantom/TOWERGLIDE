@@ -30,6 +30,16 @@ namespace TowerGlide.App
         /// <summary>설정 화면에서 값이 바뀌면 발생 — 비행 중이면 FlightSession이 즉시 반영.</summary>
         public event Action SettingsChanged;
 
+        private DevLogFile _devLog;
+
+        /// <summary>현재 기기 사양(SystemInfo) → Core 품질 자동 선택 입력.</summary>
+        public static DeviceSpec CurrentDevice => new DeviceSpec
+        {
+            SystemMemoryMB = SystemInfo.systemMemorySize,
+            ProcessorCount = SystemInfo.processorCount,
+            IsMobile = Application.isMobilePlatform,
+        };
+
         /// <summary>메인 메뉴 → 비행 씬으로 넘기는 모드 선택. 비행 씬을 직접 Play하면 기본값(Free Flight).</summary>
         public FlightMode PendingMode { get; set; } = FlightMode.FreeFlight;
 
@@ -49,8 +59,21 @@ namespace TowerGlide.App
         private void Initialize()
         {
             State = new GameStateMachine();
+            if (DevOverlay.Enabled)
+            {
+                // 실기기 테스트용: 로그 파일 + 측정 오버레이(릴리스 빌드에는 없음)
+                try { _devLog = new DevLogFile(System.IO.Path.Combine(Application.persistentDataPath, "logs")); }
+                catch (Exception e) { Debug.LogWarning($"[TOWERGLIDE] 개발 로그 파일 생성 실패: {e.GetType().Name}"); }
+                gameObject.AddComponent<DevOverlay>();
+            }
             Save = new LocalSaveService();
             Save.Load();
+            // 첫 실행: 기기 사양에 맞는 그래픽 단계·프레임(명세 7.1). 이후엔 사용자 설정 우선
+            if (QualityAutoSelector.ApplyOnce(Save.Data.settings, CurrentDevice))
+            {
+                Debug.Log($"[TOWERGLIDE] 기기 기본 품질: {(QualityTier)Save.Data.settings.qualityTier}, {Save.Data.settings.targetFrameRate}fps");
+                Save.Save();
+            }
             Haptics = new HapticService();
             Audio = gameObject.AddComponent<AudioManager>();
             Aircraft = new AircraftSelectionService(Save, Resources.Load<AircraftCatalog>(AircraftSelectionService.CatalogResourcePath));
@@ -75,6 +98,7 @@ namespace TowerGlide.App
         public void CommitSettings()
         {
             Save.Data.settings = Save.Data.settings.Sanitized();
+            QualityAutoSelector.ApplyOnce(Save.Data.settings, CurrentDevice); // 설정 초기화 직후면 기기 기본값 재계산
             ApplySettings();
             Save.Save();
             SettingsChanged?.Invoke();
@@ -87,6 +111,10 @@ namespace TowerGlide.App
             if (paused) Save.Save(); // 백그라운드 전환 시 저장(강제 종료 대비)
         }
 
-        private void OnApplicationQuit() => Save.Save();
+        private void OnApplicationQuit()
+        {
+            Save.Save();
+            _devLog?.Dispose();
+        }
     }
 }

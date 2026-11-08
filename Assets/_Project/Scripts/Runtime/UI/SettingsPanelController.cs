@@ -33,6 +33,17 @@ namespace TowerGlide.UI
         [SerializeField] private Text licenseText;
 
         private bool _binding;
+        private static SettingsPanelController _open;
+
+        public bool IsOpen => panel != null && panel.activeSelf;
+
+        /// <summary>뒤로가기·일시정지 키: 열린 설정 화면이 있으면 닫고 true(일시정지 해제보다 먼저).</summary>
+        public static bool CloseIfOpen()
+        {
+            if (_open == null || !_open.IsOpen) return false;
+            _open.Hide();
+            return true;
+        }
 
         private static SettingsData S => GameApp.Instance != null ? GameApp.Instance.Settings : null;
 
@@ -56,14 +67,20 @@ namespace TowerGlide.UI
         {
             if (S == null) return;
             if (panel != null) panel.SetActive(true);
+            _open = this;
             if (noticeText != null) noticeText.text = string.Empty;
             Refresh();
         }
 
         public void Hide()
         {
-            if (licensePanel != null) licensePanel.SetActive(false);
+            if (licensePanel != null && licensePanel.activeSelf)
+            {
+                licensePanel.SetActive(false); // 라이선스 화면이 열려 있으면 그것만 닫음
+                return;
+            }
             if (panel != null) panel.SetActive(false);
+            if (_open == this) _open = null;
         }
 
         public void CycleQuality()

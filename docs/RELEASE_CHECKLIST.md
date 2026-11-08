@@ -10,6 +10,7 @@
 - [x] [코드] 업로드 키는 환경 변수로만, 빌드 후 비밀번호 제거, `.gitignore`에 키·인증서 확장자(D-018)
 - [x] [코드] 광고·분석·로그인·서버 SDK 없음 → 데이터 수집 없음(D-015)
 - [x] [코드] 백그라운드 전환 시 자동 일시정지 + 저장
+- [x] [코드] (2026-11-08) 한국어 홈 화면 이름 "타워글라이드"(Android values-ko, iOS ko.lproj), iOS `ITSAppUsesNonExemptEncryption = NO`, Android 권한 점검 보고서, 임시 아이콘·스플래시 배경, 성능 측정용 APK 메뉴 — 실기기 절차는 `docs/DEVICE_TEST_GUIDE.md`
 
 ## B. 개발 환경 (소유자)
 - [ ] [소유자] Unity Hub 설치 → **Unity 6.3 LTS** + 모듈: Android Build Support(OpenJDK, Android SDK & NDK Tools), iOS Build Support
@@ -34,7 +35,7 @@
 - [ ] [소유자] App Store Connect에 앱 생성(번들 ID 동일), SKU, 기본 언어 한국어
 - [ ] **macOS 빌드 경로 결정 [소유자]**: ① Mac(직접/대여) ② GitHub Actions macOS 러너(공개 저장소 무료, 비공개는 분당 과금·배수 적용) ③ Unity Build Automation 등 클라우드 — 비용은 결정 시점 공식 가격 확인
 - [ ] `TOWERGLIDE ▸ Build ▸ iOS Xcode 프로젝트` → macOS Xcode에서 Signing(자동 서명) → Archive → TestFlight
-- [ ] 개인정보 보호 라벨 "데이터 수집 안 함", 개인정보처리방침 URL, 연령 등급 설문, 수출 규정(암호화 미사용 → `ITSAppUsesNonExemptEncryption = NO` Info.plist 반영 — Phase 5 [코드])
+- [ ] 개인정보 보호 라벨 "데이터 수집 안 함", 개인정보처리방침 URL, 연령 등급 설문, 수출 규정 "암호화 미사용"(Info.plist `ITSAppUsesNonExemptEncryption = NO`는 빌드 후처리로 반영됨, D-053)
 - [ ] Unity 6가 포함하는 **Privacy Manifest(PrivacyInfo.xcprivacy)**가 Xcode 프로젝트에 들어갔는지 확인
 - [ ] 실기기(TestFlight)에서 노치·홈 인디케이터·가로 회전·백그라운드 복귀 확인
 

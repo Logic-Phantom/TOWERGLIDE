@@ -30,6 +30,7 @@ namespace TowerGlide.EditorTools
             EnsureRenderPipelines();
             EnsureTuningAsset();
             EnsureFontImport();
+            ApplyIcons();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
             Debug.Log("[TOWERGLIDE] 프로젝트 설정 적용 완료. 입력 처리 방식이 바뀌었다면 Unity가 재시작을 요청합니다.");
@@ -66,6 +67,7 @@ namespace TowerGlide.EditorTools
 
             // Unity 6 Personal은 스플래시 로고를 끌 수 있다(출시 전 현재 약관 재확인)
             PlayerSettings.SplashScreen.showUnityLogo = false;
+            PlayerSettings.SplashScreen.backgroundColor = new Color(0.04f, 0.09f, 0.2f); // 아이콘 하늘색 계열 어두운 남색
 
             // ---- Android (Google Play) ----
             PlayerSettings.Android.bundleVersionCode = v.build;
@@ -189,6 +191,31 @@ namespace TowerGlide.EditorTools
                 importer.fontNames = new[] { "Pretendard", "Apple SD Gothic Neo", "Noto Sans CJK KR", "Noto Sans KR", "Malgun Gothic", "Roboto" };
                 importer.SaveAndReimport();
             }
+        }
+
+        public const string AppIconPath = TowerglideEditorUtil.Root + "/Art/Icons/AppIcon_1024.png";
+
+        /// <summary>
+        /// 앱 아이콘(모든 플랫폼 기본) = Art/Icons/AppIcon_1024.png. 현재는 소유자 제공 시안을 둥근 모서리 없이 자른 **임시 아이콘**
+        /// (docs/BRAND_AND_TRADEMARKS.md — 출시 전 확정 필요). Android 적응형 아이콘(전경/배경 분리)은 확정 아이콘으로 만든다.
+        /// </summary>
+        public static void ApplyIcons()
+        {
+            if (!(AssetImporter.GetAtPath(AppIconPath) is TextureImporter importer))
+            {
+                Debug.LogWarning($"[TOWERGLIDE] 아이콘 없음: {AppIconPath}");
+                return;
+            }
+            importer.textureType = TextureImporterType.Default;
+            importer.sRGBTexture = true;
+            importer.npotScale = TextureImporterNPOTScale.None;
+            importer.mipmapEnabled = false;
+            importer.maxTextureSize = 1024;
+            importer.textureCompression = TextureImporterCompression.Uncompressed;
+            importer.alphaSource = TextureImporterAlphaSource.None; // iOS 아이콘은 투명도 금지
+            importer.SaveAndReimport();
+            var icon = AssetDatabase.LoadAssetAtPath<Texture2D>(AppIconPath);
+            PlayerSettings.SetIcons(NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);
         }
 
         public static AircraftFlightTuning EnsureTuningAsset()

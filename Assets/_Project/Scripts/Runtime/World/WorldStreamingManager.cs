@@ -1,4 +1,7 @@
 using System.Text;
+using TowerGlide.App;
+using TowerGlide.Core.App;
+using TowerGlide.Core.Save;
 using TowerGlide.Core.World.Streaming;
 using TowerGlide.Flight;
 using TowerGlide.Gameplay;
@@ -54,7 +57,9 @@ namespace TowerGlide.World
                 BoostLookaheadSeconds = boostLookaheadSeconds,
                 UnloadRadius = Mathf.Max(unloadRadius, loadRadius + 100f),
                 MaxConcurrentLoads = Mathf.Max(1, maxConcurrentLoads),
-                MaxResidentChunks = Mathf.Max(4, maxResidentChunks),
+                // 그래픽 단계별 메모리 예산(저사양일수록 적게 상주) — 인스펙터 값이 상한
+                MaxResidentChunks = Mathf.Max(4, Mathf.Min(maxResidentChunks,
+                    QualityAutoSelector.MaxResidentChunks(GameApp.Instance != null ? (QualityTier)GameApp.Instance.Settings.qualityTier : QualityTier.Quality))),
                 RetryDelaySeconds = retryDelaySeconds,
             };
         }

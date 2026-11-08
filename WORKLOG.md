@@ -4,6 +4,31 @@
 
 ---
 
+## 2026-11-08 — 실기기 테스트 직전까지 준비
+
+요청: "실기기 테스트 하기 직전까지 남은 작업 계속".
+
+### 한 일
+- Core: `QualityAutoSelector`(기기 사양 → 그래픽 단계·프레임·청크 예산, 1회 적용), `FrameStats`(평균·1% Low·최대·느린 프레임 비율), `SettingsData.qualityAutoApplied`(필드 추가 — 기존 저장은 false로 읽혀 한 번 적용, 저장 버전 변경 없음).
+- Runtime: `DevOverlay`(OnGUI 측정 오버레이), `DevLogFile`(기기 내 로그), GameApp 첫 실행 품질 자동 적용, 설정 초기화 시 기기 기본값 재계산, 뒤로가기(메인 메뉴·설정·격납고·비행), 단계별 청크 상주 상한.
+- Editor: `TowerglideAndroidPostProcess`(values-ko 앱 이름, 권한 보고서), `TowerglideIosPostProcess`(암호화 미사용, ko.lproj 이름), 아이콘·스플래시 설정, 성능 측정용 APK 메뉴.
+- 아이콘: `brand/icon-concept.webp`를 Windows 이미지 코덱(WIC)으로 디코딩 → 대각선 70px의 검은 둥근 모서리를 잘라 1024/512/192 PNG(눈으로 확인).
+- 문서: `docs/DEVICE_TEST_GUIDE.md` 신규, 결정 D-050~055, 출시 체크리스트·테스트 계획·성능·브랜드 갱신.
+
+### 테스트 결과
+| 범위 | 결과 |
+|---|---|
+| core-tests | ✅ 119케이스 통과 ([run](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42467820554)) — 신규 8: 품질 자동 선택 5·프레임 통계 3 |
+| 1차 시도에서 고친 것 | 1% Low 인덱스가 한 칸 어긋나 가장 느린 1%를 놓치던 계산(커밋 전 테스트 설계 중 발견), 설정 초기화가 저사양 기기를 Balanced로 되돌리던 동작 |
+| Android/iOS 후처리·오버레이·아이콘 적용 | **미실행** — Unity 미설치 |
+
+### 알려진 위험
+- `TowerglideAndroidPostProcess`·`TowerglideIosPostProcess`는 각각 `UNITY_ANDROID`·`UNITY_IOS`일 때만 컴파일된다 — 빌드 대상 전환 후 처음 컴파일될 때 API 오류가 나올 수 있음.
+- 성능 측정 빌드를 배치 모드로 돌리면 빌드 성공 시 즉시 종료되어 임시 정의(`TG_PERF_HUD`)가 Player 설정에 남을 수 있다 → 메뉴로 실행하거나 빌드 후 Scripting Define 확인.
+- 품질 자동 선택 기준(4GB·6코어·8GB)은 추정 — 실측 후 조정.
+
+---
+
 ## 2026-11-08 — 한글 폰트(Pretendard) 도입
 
 요청: "폰트 도입"(D-048 후속).
