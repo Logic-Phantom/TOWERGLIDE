@@ -4,6 +4,30 @@
 
 ---
 
+## 2026-11-08 — Phase 2 도시·장애물 코스
+
+### 한 일
+- Core `World/`: `Float3`, `CourseDefinition`·`SkylineCourses`, `CourseValidator`, `BuildingCatalog`(12종·높이 범위·가중치), `CityLayoutGenerator`(블록당 난수 소비 고정, 예약·최소 높이 블록, 코스 높이 제한).
+- Runtime: `ProceduralMeshes`(미터 UV 박스, 외벽/지붕 서브메시), `FeedbackFx`+`PooledParticle`(ObjectPool), 링 빛기둥(`CheckpointGate.beacon`), HUD 근접 회피 플래시·경계 화살표, `FlightSession`에서 효과·진동 연결.
+- Editor: `TowerglideMaterials`(공유 머티리얼, 창문 텍스처 3종 생성), `TowerglideBuildingFactory`(아키타입 모듈·콜라이더·LOD), `TowerglidePrefabFactory`(프리팹 13종), `TowerglideCourseValidator`(3번 메뉴), `TowerglideSceneBuilder` 개편(레이아웃·프리팹 기반, 메시 에셋 저장, 생성 후 자동 검증).
+- 테스트: `WorldLayoutTests` 15케이스(EditMode), `CityFlightSceneTests` 5케이스(PlayMode).
+- CI: `GitHubActionsTestLogger`로 실패 테스트를 주석 출력.
+
+### 테스트 결과
+| 범위 | 결과 |
+|---|---|
+| core-tests 1차 | ❌ `ReservedAndMinHeightLotsAreRespected` — 스카이브리지 지지 건물(210,140) 높이 28m. **원인: 코스 08→09 대각선 구간이 건물 옆을 지나 높이 제한이 걸림 = 실제로는 링 경로가 120m 건물에 막히는 설계 결함** |
+| 조치 | 09~12번 링 재배치(08→09는 거리 따라 상승) — D-026 |
+| core-tests 최종 | ✅ 65케이스 통과 ([run](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42457662405)) |
+| Unity 컴파일·PlayMode·씬 생성·코스 검증 메뉴 | **미실행** — Unity 미설치 |
+
+### 알려진 위험
+- 에디터 스크립트 분량이 크게 늘었다(머티리얼·텍스처 임포터·프리팹·LOD·파티클 API). Unity에서 처음 열 때 API 이름 오류 가능성이 가장 높은 곳.
+- 코스 검증은 직선 근사. 실제 선회 경로는 실플레이로 확인.
+- URP 파티클 머티리얼 투명 설정을 속성 값으로만 지정 — 에디터에서 Surface Type이 Transparent로 보이는지 확인 필요.
+
+---
+
 ## 2026-11-08 — Phase 0 부트스트랩 + Phase 1/2 코드 골격
 
 ### 환경 조사

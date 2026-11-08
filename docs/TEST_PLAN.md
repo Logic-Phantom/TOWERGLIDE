@@ -15,6 +15,9 @@
 | 손상 데이터 기본값 복구 | `SaveDataTests.NullLoadReturnsDefaultsAsCorrupted` (+ 파일 단위는 `LocalSaveService` — PlayMode 후속) |
 | 공력 함수 | `AeroModelTests` (실속 후 완만 감소, 저속 양력 감소, 에어브레이크, 추력 목표, 조종 권한) |
 | 상태 전이 | `GameStateMachineTests` |
+| 코스 규칙(간격·고도·선회각·상승각) | `CourseValidatorTests` |
+| 건물 아키타입(10종 이상, 모든 높이 커버) | `BuildingCatalogTests` |
+| 도시 배치(결정성, 코스 비우기, 협곡 벽, 예약·지지 건물, 형태 다양성) | `CityLayoutGeneratorTests` |
 
 실행: Unity Test Runner(Window ▸ General ▸ Test Runner ▸ EditMode) 또는 Unity 없이 `dotnet test tools/core-tests`(GitHub Actions `core-tests`).
 
@@ -26,7 +29,13 @@
 | 입력 해제 후 각속도 안정 | `AngularVelocitySettlesAfterRelease` |
 | 수평 순항 유지 | `HoldsAltitudeRoughlyWithNoInput` |
 | 부스트 제한 | `BoostIsLimited` |
-| 충돌 처리·복귀, 링 진행률, 일시정지/재개, 결과 → 재시작 | **후속**(씬 기반 테스트 — CityFlight 로드 후 검증) |
+| 씬 스폰·SKYLINE 시작 | `CityFlightSceneTests.SpawnsAircraftAndStartsSkylineRun` |
+| 링 통과 → 진행률, 중복 통과 무시 | `FlyingThroughFirstGateAdvancesProgress` |
+| 충돌 집계 → 복귀 | `CrashIsCountedThenAircraftRespawns` |
+| 일시정지/재개 | `PauseStopsTimeAndResumeRestores` |
+| 결과 → 재시작(같은 모드) | `FinishShowsResultsAndRestartReloads` |
+
+씬 테스트는 `TOWERGLIDE ▸ 2. 씬 생성`으로 CityFlight가 Build Settings에 들어간 뒤에만 실행되고, 그 전에는 Ignore된다.
 
 ## 3. 수동 (에디터 Play)
 - [ ] 3분 이상 비행 중 예외 없음(Console)
@@ -49,3 +58,5 @@
 |---|---|---|---|
 | 2026-11-08 | EditMode(Core) 50 | GitHub Actions ubuntu, .NET 8, C# 9 | ✅ 전체 통과 ([run](https://github.com/Logic-Phantom/TOWERGLIDE/actions/runs/42456690200)) |
 | 2026-11-08 | PlayMode 6 · Unity Test Runner | — | **미실행**: Unity 미설치 |
+| 2026-11-08 | EditMode(Core) 65 | GitHub Actions | 1차 실패 → 원인: 코스 08→09 대각선이 스카이브리지 지지 건물을 깎음(실제 설계 결함) → 코스 수정 후 통과. 최종 결과는 README |
+| 2026-11-08 | PlayMode 11 · 코스 검증 메뉴 | — | **미실행**: Unity 미설치 |

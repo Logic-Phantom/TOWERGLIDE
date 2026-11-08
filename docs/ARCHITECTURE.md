@@ -81,7 +81,8 @@ docs/                                설계·결정·출시 문서
 | 메뉴 | 하는 일 | 멱등성 |
 |---|---|---|
 | TOWERGLIDE ▸ 1. 프로젝트 설정 적용 | 폴더, Player 설정(ID·버전·가로·Android/iOS), Active Input Handling, URP 3단계 + Quality Level, 비행 튜닝 에셋 | 같은 값으로 덮어씀 |
-| TOWERGLIDE ▸ 2. 씬 생성 | `CityFlight`: 시드 고정 그레이박스 도시(11×11 블록), 장애물 7종, 링 12개 코스, 기체, 추적 카메라, 터치 HUD / `MainMenu`: 배경·메뉴 / Build Settings 등록 | 씬 파일을 통째로 다시 만듦(같은 시드 → 같은 결과) |
+| TOWERGLIDE ▸ 2. 씬 생성 | 프리팹(기체·링·장애물 8종·VFX 3종) 갱신 → `CityFlight`: Core 레이아웃으로 건물 12종 모듈 조립, 장애물·링 배치, HUD / `MainMenu` / Build Settings 등록 → 코스 검증 자동 실행 | 씬·프리팹을 같은 결과로 다시 만듦 |
+| TOWERGLIDE ▸ 3. 코스 검증 | 열린 CityFlight에서 코스 규칙 + 링 사이 경로 막힘(구 반지름 4.5m) + 스폰·링 겹침 | 읽기 전용 |
 | TOWERGLIDE ▸ Build ▸ … | 설정 검증, Android AAB(릴리스)/APK(개발), iOS Xcode 프로젝트 | — |
 
 **수동 조정 포인트**: 씬을 손으로 다듬기 시작하면 2번 메뉴를 다시 누르지 않는다(덮어씀). 이후 변경은 프리팹화(Phase 2)해서 관리한다.
@@ -96,3 +97,29 @@ docs/                                설계·결정·출시 문서
 | 새 장애물 | 콜라이더 + `ObstacleMarker`(유형) + 필요 시 `KinematicMover` |
 | 새 모드(Time Attack 등) | `FlightMode` 값 추가 → `FlightSession` 분기, `RecordsData` 필드(저장 버전 올리고 `SaveDataMigrator`) |
 | 스토어 기능(리뷰 요청·리더보드) | `Platform/` 아래 인터페이스 + 플랫폼별 구현(개인정보 영향 검토 후) |
+
+## Phase 2 추가 구성 (2026-11-08)
+
+```
+Core/World     Float3 · CourseDefinition/SkylineCourses · CourseValidator · BuildingCatalog(12종) · CityLayoutGenerator
+Runtime/World  ProceduralMeshes(미터 UV 박스)
+Runtime/Gameplay FeedbackFx(ObjectPool) · PooledParticle · CheckpointGate.beacon
+Runtime/UI     FlightHud: 근접 회피 플래시 · 경계 화살표
+Editor         TowerglideMaterials(머티리얼·창문 텍스처) · TowerglideBuildingFactory(아키타입 모듈·LOD)
+               TowerglidePrefabFactory(프리팹) · TowerglideCourseValidator(3번 메뉴)
+```
+
+데이터 흐름(씬 생성): `SkylineCourses.Downtown()` + `CityLayoutSettings.Downtown()` → `CityLayoutGenerator.Generate`(코스 주변 높이 제한) → 블록별 `TowerglideBuildingFactory.Build`(아키타입) → 메시를 `CityMeshes.asset`에 저장 → 장애물·링 프리팹 배치 → 검증.
+
+코스를 바꾸려면 `Core/World/CourseDefinition.cs`의 `SkylineCourses`를 고치고 → `dotnet test`(또는 CI)로 규칙·도시 테스트 → 씬 생성 → 3번 메뉴로 경로 확인. 장애물 위치(`TowerglideSceneBuilder.BuildObstacles`)는 코스 구간 기준이므로 함께 확인한다.
+
+| 프리팹 | 원점 / 축 | 비고 |
+|---|---|---|
+| `Aircraft` | 기체 중심, +Z 전방 | Rigidbody·콜라이더·비행·충돌·근접 센서 |
+| `CheckpointRing` | 링 중심, +Z 통과 | 트리거·16조각 프레임·빛기둥 |
+| `Crane_Static` / `Crane_Rotating` | 마스트 바닥, 붐 +X | 회전형은 붐에 KinematicMover |
+| `SurveyDrone` / `CargoBalloon` | 중심 | KinematicMover 경로는 인스턴스에서 |
+| `BillboardFrame` / `CableZone` | 바닥 중앙·케이블 중앙, +Z 통과 | 스팬 46m(거리 폭) |
+| `Skybridge` | 데크 중심, 길이 Z | 70m |
+| `AntennaArray` | 옥상 바닥 | +36m 높이 |
+| `FX_*` | — | stopAction Callback, 풀 전용 |

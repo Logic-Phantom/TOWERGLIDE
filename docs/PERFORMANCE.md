@@ -12,9 +12,9 @@
 - 이동 장애물은 Kinematic Rigidbody(MovePosition) — 물리 비용 예측 가능.
 
 ## 해야 할 것 (Phase 4)
-- [ ] LODGroup(원거리 건물 단순화), 창문 셰이더/텍스처 아틀라스
+- [x] LODGroup(LOD0 전체 / LOD1 본체 / 1.5% 미만 컬링), 창문 = 미터 UV + 64px 반복 텍스처(2026-11-08, 코드만)
 - [ ] Occlusion Culling 베이크 검토
-- [ ] 파티클(충돌·부스트·링) + 오브젝트 풀
+- [x] 파티클(충돌·링·근접 회피) + `ObjectPool` 예열(2026-11-08, 코드만) · [ ] 부스트 화염·비행운
 - [ ] 텍스처 최대 크기·ASTC 압축 규칙
 - [ ] Profiler(CPU/GPU/Memory/GC Alloc), Android GPU Inspector(선택)
 - [ ] 5분 이상 비행 발열·메모리
